@@ -3,11 +3,25 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serveStatic } from 'hono/bun';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
 import auth from './routes/auth';
 import books from './routes/books';
 import recommend from './routes/recommend';
+import genres from './routes/genres';
+import users from './routes/users';
 
-const app = new Hono();
+import type { AppType } from './types/hono';
+
+// Create uploads directory if it doesn't exist
+const UPLOADS_DIR = join(process.cwd(), 'public', 'uploads');
+if (!existsSync(UPLOADS_DIR)) {
+  mkdirSync(UPLOADS_DIR, { recursive: true });
+  console.log('📁 Created uploads directory');
+}
+
+const app = new Hono<AppType>();
 
 // Middleware
 app.use('*', logger());
@@ -17,7 +31,7 @@ app.use('*', cors({
 }));
 
 // Serve static files (uploaded images)
-app.use('/uploads/*', serveStatic({ root: './' }));
+app.use('/uploads/*', serveStatic({ root: './public' }));
 
 // Health check
 app.get('/', (c) => {
@@ -32,6 +46,8 @@ app.get('/', (c) => {
 app.route('/auth', auth);
 app.route('/books', books);
 app.route('/recommend', recommend);
+app.route('/genres', genres);
+app.route('/users', users);
 
 // 404 handler
 app.notFound((c) => {

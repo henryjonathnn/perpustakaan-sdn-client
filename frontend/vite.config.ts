@@ -6,11 +6,12 @@ import path from 'path'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    host: true, // Needed for docker
+    host: '0.0.0.0',
     port: 5173,
     watch: {
-      usePolling: true // Needed for hot reload in Docker
-    }
+      usePolling: true
+    },
+    strictPort: true,
   },
   resolve: {
     alias: {

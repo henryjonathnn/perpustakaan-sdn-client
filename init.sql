@@ -7,10 +7,18 @@ CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   password VARCHAR(255) NOT NULL,
-  role ENUM('siswa', 'pustakawan') NOT NULL,
+  role ENUM('siswa', 'pustakawan') NOT NULL DEFAULT 'siswa',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_username (username),
   INDEX idx_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table: genres
+CREATE TABLE IF NOT EXISTS genres (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Table: books
@@ -18,15 +26,15 @@ CREATE TABLE IF NOT EXISTS books (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   author VARCHAR(255) NOT NULL,
-  genre VARCHAR(255) NOT NULL,
-  description TEXT,
+  genre_id INT NOT NULL,
+  synopsis TEXT,
   cover_img VARCHAR(255) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_title (title),
   INDEX idx_author (author),
-  INDEX idx_genre (genre),
-  FULLTEXT KEY ft_search (title, author, genre, description)
+  FOREIGN KEY (genre_id) REFERENCES genres(id),
+  FULLTEXT KEY ft_search (title, author, synopsis)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default users
@@ -36,13 +44,28 @@ INSERT INTO users (username, password, role) VALUES
 ('siswa1', '$2a$10$OSkNsvXLi4inMt4F5mPKp.4fkBkuM1jKIpW9Ay9hJOdsQIVMVSaEq', 'siswa'),
 ('pustakawan1', '$2a$10$OSkNsvXLi4inMt4F5mPKp.4fkBkuM1jKIpW9Ay9hJOdsQIVMVSaEq', 'pustakawan');
 
--- Insert sample books with cover images
-INSERT INTO books (title, author, genre, description, cover_img) VALUES
-('Harry Potter and the Half-Blood Prince', 'J.K. Rowling', 'Fantasy, Fiction, Magic, Childrens, Adventures', 'The war against Voldemort is not going well: even Muggle governments are noticing. Ron scans the obituary pages of The Daily Prophet looking for familiar names. Dumbledore is absent from Hogwarts for long stretches of time, and the Order of the Phoenix has already suffered losses.', 'harry-potter.jpg'),
-('The Magicians', 'Lev Grossman', 'Fantasy, Fiction, Magic', 'Quentin discovers a magical school and enters a darker, more dangerous world than he imagined.', 'the-magicians.jpg'),
-('A Wizard of Earthsea', 'Ursula K. Le Guin', 'Fantasy, Fiction, Magic, Adventure', 'Young wizard Ged faces the consequences of his pride and must confront the shadow he unleashed.', 'wizard-earthsea.jpg'),
-('Fablehaven', 'Brandon Mull', 'Fantasy, Fiction, Magic, Childrens, Adventure', 'Siblings Kendra and Seth discover a sanctuary for magical creatures and face trials while escaping evil forces.', 'fablehaven.jpg'),
-('Septimus Heap', 'Angie Sage', 'Fantasy, Fiction, Magic, Childrens', 'Septimus Heap, a boy with ancient magyk, must save the kingdom from dark forces.', 'septimus-heap.jpg'),
-('Percy Jackson and the Lightning Thief', 'Rick Riordan', 'Fantasy, Fiction, Adventure, Childrens, Mythology', 'Percy Jackson discovers he is a demigod, the son of Poseidon. When Zeus lightning bolt is stolen, Percy must embark on a quest across America to prevent a war among the gods.', 'percy-jackson.jpg'),
-('The Chronicles of Narnia', 'C.S. Lewis', 'Fantasy, Fiction, Magic, Childrens, Adventure', 'Four siblings discover a magical wardrobe that leads to the land of Narnia. They must help Aslan defeat the White Witch and restore peace.', 'chronicles-narnia.jpg'),
-('Eragon', 'Christopher Paolini', 'Fantasy, Fiction, Adventure, Dragons', 'A young farm boy named Eragon finds a mysterious dragon egg. He is thrust into a world of magic and must battle against the tyrannical king.', 'eragon.jpg');
+-- Insert genres suitable for elementary school library
+INSERT INTO genres (name) VALUES
+('Fiksi Anak'),
+('Dongeng'),
+('Cerita Rakyat'),
+('Sains'),
+('Matematika'),
+('Sejarah'),
+('Kewarganegaraan'),
+('Pendidikan Agama'),
+('Bahasa Indonesia'),
+('Bahasa Inggris'),
+('Komik Edukasi'),
+('Ensiklopedia Anak');
+
+-- Insert sample books with cover images for elementary school
+INSERT INTO books (title, author, genre_id, synopsis, cover_img) VALUES
+('Petualangan si Kancil', 'Dian Kristiani', 3, 'Kumpulan cerita kancil yang mengajarkan nilai-nilai moral dan kecerdikan dalam menghadapi masalah.', 'kancil-adventures.jpg'),
+('Belajar Berhitung Bersama Dodo', 'Watiek Ideo', 5, 'Buku matematika dasar yang mengajarkan konsep penjumlahan dan pengurangan dengan cara yang menyenangkan.', 'dodo-math.jpg'),
+('Atlas Dunia untuk Anak', 'Tim Geografi', 12, 'Atlas bergambar yang memperkenalkan anak-anak pada geografi dunia dengan ilustrasi menarik.', 'kids-atlas.jpg'),
+('Cerita Nabi untuk Anak', 'Ustadz Ahmad', 8, 'Kumpulan kisah-kisah nabi yang diceritakan dengan bahasa sederhana untuk anak-anak.', 'prophet-stories.jpg'),
+('Seri Sains Dasar: Tubuh Kita', 'Dr. Sarah Johnson', 4, 'Pengenalan tentang anatomi tubuh manusia untuk anak-anak SD dengan ilustrasi yang informatif.', 'our-body.jpg'),
+('Laskar Pelangi', 'Andrea Hirata', 1, 'Kisah inspiratif tentang perjuangan anak-anak di Belitung untuk mendapatkan pendidikan yang layak.', 'laskar-pelangi.jpg'),
+('Kamus Bergambar 3 Bahasa', 'Tim Edukasi', 10, 'Kamus bergambar yang memuat kata-kata dasar dalam Bahasa Indonesia, Inggris, dan Arab.', 'picture-dictionary.jpg'),
+('Pahlawan Nasional untuk Anak', 'Tim Sejarah', 6, 'Pengenalan tokoh-tokoh pahlawan nasional Indonesia untuk anak-anak sekolah dasar.', 'national-heroes.jpg');

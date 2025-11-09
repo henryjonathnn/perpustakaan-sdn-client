@@ -2,12 +2,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-const UPLOAD_DIR = join(process.cwd(), 'uploads', 'covers');
-
-// Pastikan folder uploads exists
-if (!existsSync(UPLOAD_DIR)) {
-  mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads');
 
 /**
  * Allowed image mime types

@@ -13,7 +13,12 @@ const books = new Hono();
  */
 books.get('/', async (c) => {
   try {
-    const [rows] = await pool.query<Book[]>('SELECT * FROM books ORDER BY created_at DESC');
+    const [rows] = await pool.query<Book[]>(
+      `SELECT b.*, g.name as genre_name 
+       FROM books b 
+       INNER JOIN genres g ON b.genre_id = g.id 
+       ORDER BY b.created_at DESC`
+    );
     return c.json({ books: rows });
   } catch (error) {
     console.error('Get books error:', error);
@@ -28,7 +33,13 @@ books.get('/', async (c) => {
 books.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const [rows] = await pool.query<Book[]>('SELECT * FROM books WHERE id = ?', [id]);
+    const [rows] = await pool.query<Book[]>(
+      `SELECT b.*, g.name as genre_name 
+       FROM books b 
+       INNER JOIN genres g ON b.genre_id = g.id 
+       WHERE b.id = ?`, 
+      [id]
+    );
     
     if (rows.length === 0) {
       return c.json({ error: 'Book not found' }, 404);
@@ -47,16 +58,30 @@ books.get('/:id', async (c) => {
  */
 books.post('/', authMiddleware, pustakawanOnly, async (c) => {
   try {
-    const body = await c.req.json<BookRequest>();
-    const { title, author, genre, description } = body;
+    // Handling multipart form data
+    const formData = await c.req.formData();
+    const title = formData.get('title') as string;
+    const author = formData.get('author') as string;
+    const genreId = formData.get('genreId') as string;
+    const synopsis = formData.get('synopsis') as string;
+    const coverImage = formData.get('coverImage') as File;
     
-    if (!title || !author || !genre || !description) {
+    if (!title || !author || !genreId || !synopsis) {
       return c.json({ error: 'All fields are required' }, 400);
     }
     
+    let coverImageName = null;
+    if (coverImage) {
+      const validation = validateImage(coverImage);
+      if (!validation.valid) {
+        return c.json({ error: validation.error }, 400);
+      }
+      coverImageName = await saveFile(coverImage);
+    }
+    
     const [result] = await pool.query<any>(
-      'INSERT INTO books (title, author, genre, description) VALUES (?, ?, ?, ?)',
-      [title, author, genre, description]
+      'INSERT INTO books (title, author, genre_id, synopsis, cover_img) VALUES (?, ?, ?, ?, ?)',
+      [title, author, genreId, synopsis, coverImageName]
     );
     
     return c.json({
@@ -77,16 +102,46 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
 books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
     const id = c.req.param('id');
-    const body = await c.req.json<BookRequest>();
-    const { title, author, genre, description } = body;
+    const formData = await c.req.formData();
+    const title = formData.get('title') as string;
+    const author = formData.get('author') as string;
+    const genreId = formData.get('genreId') as string;
+    const synopsis = formData.get('synopsis') as string;
+    const coverImage = formData.get('coverImage') as File;
     
-    if (!title || !author || !genre || !description) {
+    if (!title || !author || !genreId || !synopsis) {
       return c.json({ error: 'All fields are required' }, 400);
     }
     
+    // Get current book data for cover image handling
+    const [currentBook] = await pool.query<Book[]>(
+      'SELECT cover_img FROM books WHERE id = ?',
+      [id]
+    );
+    
+    if (currentBook.length === 0) {
+      return c.json({ error: 'Book not found' }, 404);
+    }
+    
+    let coverImageName = currentBook[0].cover_img;
+    
+    if (coverImage) {
+      const validation = validateImage(coverImage);
+      if (!validation.valid) {
+        return c.json({ error: validation.error }, 400);
+      }
+      
+      // Delete old cover image if exists
+      if (coverImageName) {
+        deleteFile(coverImageName);
+      }
+      
+      coverImageName = await saveFile(coverImage);
+    }
+    
     const [result] = await pool.query<any>(
-      'UPDATE books SET title = ?, author = ?, genre = ?, description = ? WHERE id = ?',
-      [title, author, genre, description, id]
+      'UPDATE books SET title = ?, author = ?, genre_id = ?, synopsis = ?, cover_img = ? WHERE id = ?',
+      [title, author, genreId, synopsis, coverImageName, id]
     );
     
     if (result.affectedRows === 0) {
@@ -109,6 +164,16 @@ books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
     const id = c.req.param('id');
     
+    // Get current book data for cover image deletion
+    const [currentBook] = await pool.query<Book[]>(
+      'SELECT cover_img FROM books WHERE id = ?',
+      [id]
+    );
+    
+    if (currentBook.length > 0 && currentBook[0].cover_img) {
+      deleteFile(currentBook[0].cover_img);
+    }
+    
     const [result] = await pool.query<any>('DELETE FROM books WHERE id = ?', [id]);
     
     if (result.affectedRows === 0) {
@@ -130,11 +195,24 @@ books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
 books.get('/search', async (c) => {
   try {
     const query = c.req.query('q') || '';
+    const genreId = c.req.query('genre') || '';
     
-    const [rows] = await pool.query<Book[]>(
-      'SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR genre LIKE ?',
-      [`%${query}%`, `%${query}%`, `%${query}%`]
-    );
+    let sql = `
+      SELECT b.*, g.name as genre_name 
+      FROM books b 
+      INNER JOIN genres g ON b.genre_id = g.id 
+      WHERE b.title LIKE ? OR b.author LIKE ? OR b.synopsis LIKE ?
+    `;
+    let params = [`%${query}%`, `%${query}%`, `%${query}%`];
+    
+    if (genreId) {
+      sql += ' AND b.genre_id = ?';
+      params.push(genreId);
+    }
+    
+    sql += ' ORDER BY b.created_at DESC';
+    
+    const [rows] = await pool.query<Book[]>(sql, params);
     
     return c.json({ books: rows });
   } catch (error) {

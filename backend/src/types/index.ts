@@ -9,12 +9,19 @@ export interface User extends RowDataPacket {
   created_at: Date;
 }
 
+export interface Genre extends RowDataPacket {
+  id: number;
+  name: string;
+  created_at: Date;
+}
+
 export interface Book extends RowDataPacket {
   id: number;
   title: string;
   author: string;
-  genre: string;
-  description: string;
+  genre_id: number;
+  genre_name?: string;
+  synopsis: string;
   cover_img: string | null;
   created_at: Date;
   updated_at: Date;
@@ -34,11 +41,17 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  username: string;
+  password: string;
+}
+
 export interface BookRequest {
   title: string;
   author: string;
-  genre: string;
-  description: string;
+  genreId: number;
+  synopsis: string;
+  coverImage?: File;
 }
 
 export interface RecommendationResult {
