@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: perpustakaan_sdn_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: perpustakaan_sdn
+      MYSQL_USER: bookuser
+      MYSQL_PASSWORD: bookpass123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - book_network
+
+  api:
+    image: oven/bun:latest
+    container_name: perpustakaan_sdn_api
+    restart: always
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=bookuser
+      - DB_PASSWORD=bookpass123
+      - DB_NAME=perpustakaan_sdn
+      - JWT_SECRET=09e08625f9b2963ffc92daf546201d76fe2ab33cf2f64a526caabd6238491ba9
+      - PORT=3000
+    depends_on:
+      - db
+    command: sh -c "bun install && bun run src/index.ts"
+    networks:
+      - book_network
+
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: perpustakaan_sdn_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    networks:
+      - book_network
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:
+
+networks:
+  book_network:
+    driver: bridge
