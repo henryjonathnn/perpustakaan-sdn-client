@@ -91,7 +91,7 @@ onMounted(() => {
     </div>
 
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
       <!-- Total Books -->
       <div class="bg-white rounded-lg shadow p-6">
         <div class="flex items-center">
@@ -129,19 +129,6 @@ onMounted(() => {
             <p class="text-2xl font-semibold text-gray-900">
               {{ stats.mostPopularGenre || 'N/A' }}
             </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Borrows -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-yellow-100">
-            <UsersIcon class="h-6 w-6 text-yellow-600" />
-          </div>
-          <div class="ml-4">
-            <p class="text-sm font-medium text-gray-500">Total Borrows</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ stats.totalBorrows }}</p>
           </div>
         </div>
       </div>

@@ -29,13 +29,17 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/dashboard',
-    name: 'Dashboard',
     component: () => import('../views/Dashboard.vue'),
     meta: { requiresAuth: true, requiresPustakawan: true },
     children: [
       {
         path: '',
-        redirect: '/dashboard/books'
+        redirect: '/dashboard/analytics'
+      },
+      {
+        path: 'analytics',
+        name: 'DashboardAnalytics',
+        component: () => import('../views/dashboard/Analytics.vue'),
       },
       {
         path: 'books',
@@ -48,16 +52,17 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/dashboard/Users.vue'),
       },
       {
-        path: 'analytics',
-        name: 'DashboardAnalytics',
-        component: () => import('../views/dashboard/Analytics.vue'),
-      },
-      {
         path: 'settings',
         name: 'DashboardSettings',
         component: () => import('../views/dashboard/Settings.vue'),
       },
     ],
+  },
+  // 404 Page
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFound',
+    component: () => import('../views/NotFound.vue'),
   },
 ];
 
@@ -96,7 +101,7 @@ router.beforeEach((to, from, next) => {
 
   // Check if route requires pustakawan role
   if (to.meta.requiresPustakawan && authStore.user?.role !== 'pustakawan') {
-    next('/');
+    next('/403');
     return;
   }
 

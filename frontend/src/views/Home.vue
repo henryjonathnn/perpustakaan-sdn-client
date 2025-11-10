@@ -1,48 +1,82 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Search, BookOpen, Sparkles, SlidersHorizontal } from 'lucide-vue-next';
+import debounce from 'lodash.debounce';
+import { Search, BookOpen, Sparkles, SlidersHorizontal, Loader2 } from 'lucide-vue-next';
 import { booksAPI, type Book } from '../services/api';
-import { useAuthStore } from '../stores/auth';
+import { showAlert } from '../utils/alert';
 
 const router = useRouter();
-const authStore = useAuthStore();
 const books = ref<Book[]>([]);
 const searchQuery = ref('');
 const loading = ref(true);
+const searching = ref(false);
 const error = ref('');
 
 const filteredBooks = computed(() => {
-  if (!searchQuery.value) return books.value;
-
+  if (!searchQuery.value.trim()) return books.value;
+  
   const query = searchQuery.value.toLowerCase();
   return books.value.filter(
     (book) =>
       book.title.toLowerCase().includes(query) ||
       book.author.toLowerCase().includes(query) ||
-      book.genre_name.toLowerCase().includes(query)
+      (book.genre_name && book.genre_name.toLowerCase().includes(query))
   );
 });
 
 const fetchBooks = async () => {
   try {
     loading.value = true;
+    error.value = '';
     const response = await booksAPI.getAll();
     books.value = response.data.books;
   } catch (err: any) {
-    error.value = err.response?.data?.error || 'Failed to fetch books';
+    error.value = err.response?.data?.error || 'Gagal memuat buku';
+    showAlert.error(error.value);
   } finally {
     loading.value = false;
   }
 };
 
+// Debounced search function
+const debouncedSearch = debounce(async (query: string) => {
+  if (!query.trim()) {
+    await fetchBooks();
+    return;
+  }
+  
+  try {
+    searching.value = true;
+    const response = await booksAPI.search(query);
+    books.value = response.data.books;
+  } catch (err: any) {
+    console.error('Search error:', err);
+    showAlert.error('Gagal mencari buku');
+  } finally {
+    searching.value = false;
+  }
+}, 500);
+
+// Watch search query changes
+watch(searchQuery, (newQuery) => {
+  if (newQuery.trim()) {
+    searching.value = true;
+    debouncedSearch(newQuery);
+  } else {
+    debouncedSearch.cancel();
+    searching.value = false;
+    fetchBooks();
+  }
+});
+
 const getGenreBadgeClass = (genre: string): string => {
   const lowerGenre = genre.toLowerCase();
   if (lowerGenre.includes('fantasy')) return 'badge-fantasy';
-  if (lowerGenre.includes('fiction')) return 'badge-fiction';
+  if (lowerGenre.includes('fiction') || lowerGenre.includes('fiksi')) return 'badge-fiction';
   if (lowerGenre.includes('magic')) return 'badge-magic';
   if (lowerGenre.includes('adventure')) return 'badge-adventure';
-  if (lowerGenre.includes('childrens') || lowerGenre.includes('children')) return 'badge-childrens';
+  if (lowerGenre.includes('childrens') || lowerGenre.includes('children') || lowerGenre.includes('anak')) return 'badge-childrens';
   if (lowerGenre.includes('mythology')) return 'badge-mythology';
   if (lowerGenre.includes('dragon')) return 'badge-dragons';
   return 'badge-default';
@@ -50,13 +84,17 @@ const getGenreBadgeClass = (genre: string): string => {
 
 const getBookCover = (book: Book): string => {
   if (book.cover_img) {
-    return `http://localhost:3000/uploads/covers/${book.cover_img}`;
+    return `http://localhost:3000/uploads/${book.cover_img}`;
   }
   return `https://via.placeholder.com/400x600/f8fafc/475569?text=${encodeURIComponent(book.title.substring(0, 20))}`;
 };
 
 const viewBookDetail = (id: number) => {
   router.push(`/books/${id}`);
+};
+
+const clearSearch = () => {
+  searchQuery.value = '';
 };
 
 onMounted(() => {
@@ -96,10 +134,21 @@ onMounted(() => {
             <div
               class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
               <Search class="absolute left-6 h-5 w-5 text-gray-400" />
-              <input v-model="searchQuery" type="text" placeholder="Cari buku berdasarkan judul, penulis, atau genre..."
-                class="w-full pl-14 pr-6 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" />
-              <button class="mr-3 p-2.5 rounded-xl hover:bg-gray-100 transition-colors">
-                <SlidersHorizontal class="h-5 w-5 text-gray-500" />
+              <input 
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Cari buku berdasarkan judul, penulis, atau genre..."
+                class="w-full pl-14 pr-6 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" 
+              />
+              <Loader2 v-if="searching" class="absolute right-14 h-5 w-5 text-gray-400 animate-spin" />
+              <button 
+                v-if="searchQuery"
+                @click="clearSearch"
+                class="absolute right-6 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
           </div>
@@ -137,8 +186,10 @@ onMounted(() => {
           <BookOpen class="h-10 w-10 text-gray-400" />
         </div>
         <h3 class="text-2xl font-semibold text-gray-900 mb-3">Tidak ada buku ditemukan</h3>
-        <p class="text-gray-600 mb-6">Coba gunakan kata kunci pencarian yang berbeda</p>
-        <button @click="searchQuery = ''"
+        <p class="text-gray-600 mb-6">
+          {{ searchQuery ? 'Coba gunakan kata kunci pencarian yang berbeda' : 'Belum ada buku tersedia' }}
+        </p>
+        <button v-if="searchQuery" @click="clearSearch"
           class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium">
           Reset Pencarian
         </button>
@@ -154,18 +205,18 @@ onMounted(() => {
             </h2>
             <p class="text-gray-600">
               Menampilkan <span class="font-semibold text-gray-900">{{ filteredBooks.length }}</span> buku
+              <span v-if="searching" class="text-gray-400">(mencari...)</span>
             </p>
           </div>
         </div>
 
-        <!-- Books Grid - 6 columns on large screens -->
+        <!-- Books Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           <div v-for="book in filteredBooks" :key="book.id" @click="viewBookDetail(book.id)"
-            class="book-card cursor-pointer">
+            class="book-card cursor-pointer group">
             <!-- Book Cover -->
             <div class="book-cover">
               <img :src="getBookCover(book)" :alt="book.title" loading="lazy" />
-              <!-- Overlay on hover -->
               <div
                 class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               </div>
@@ -183,7 +234,9 @@ onMounted(() => {
 
               <!-- Genre Badges -->
               <div class="flex flex-wrap gap-1.5">
-                <span v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" :key="genre"
+                <span 
+                  v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" 
+                  :key="genre"
                   :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]">
                   {{ genre.trim() }}
                 </span>
