@@ -1,4 +1,4 @@
-<!-- src/components/dashboard/Sidebar.vue -->
+<!-- frontend/src/components/dashboard/Sidebar.vue -->
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -24,7 +24,6 @@ const navigation = [
 
 const handleLogout = async () => {
   await authStore.logout();
-  router.push('/login');
 };
 </script>
 

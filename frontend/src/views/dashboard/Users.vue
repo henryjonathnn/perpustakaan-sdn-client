@@ -1,4 +1,4 @@
-# Views/dashboard/Users.vue
+<!-- frontend/src/views/dashboard/Users.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { 
@@ -9,7 +9,7 @@ import {
   XMarkIcon,
   UserCircleIcon
 } from '@heroicons/vue/24/outline';
-import { userAPI, type User } from '../../services/api';
+import { usersAPI, type User } from '../../services/api';
 import { showAlert } from '../../utils/alert';
 
 const users = ref<User[]>([]);
@@ -20,10 +20,9 @@ const modalMode = ref<'create' | 'edit'>('create');
 const selectedUser = ref<User | null>(null);
 
 const form = ref({
-  name: '',
-  email: '',
+  username: '',
   password: '',
-  role: 'user',
+  role: 'siswa' as 'siswa' | 'pustakawan',
 });
 
 // Debounced search function
@@ -36,7 +35,7 @@ const handleSearch = (event: Event) => {
 const fetchUsers = async () => {
   try {
     loading.value = true;
-    const response = await userAPI.getAll();
+    const response = await usersAPI.getAll();
     users.value = response.data.users;
   } catch (error) {
     showAlert.error('Failed to fetch users');
@@ -48,10 +47,9 @@ const fetchUsers = async () => {
 const openCreateModal = () => {
   modalMode.value = 'create';
   form.value = {
-    name: '',
-    email: '',
+    username: '',
     password: '',
-    role: 'user',
+    role: 'siswa',
   };
   showModal.value = true;
 };
@@ -60,8 +58,7 @@ const openEditModal = (user: User) => {
   modalMode.value = 'edit';
   selectedUser.value = user;
   form.value = {
-    name: user.name,
-    email: user.email,
+    username: user.username,
     password: '', // Don't populate password for security
     role: user.role,
   };
@@ -78,14 +75,14 @@ const handleSubmit = async () => {
   
   try {
     if (modalMode.value === 'create') {
-      await userAPI.register(form.value);
+      await usersAPI.create(form.value);
       showAlert.success('User created successfully');
     } else if (selectedUser.value) {
-      const updateData = { ...form.value };
+      const updateData: any = { ...form.value };
       if (!updateData.password) {
         delete updateData.password; // Don't send empty password
       }
-      await userAPI.update(selectedUser.value.id, updateData);
+      await usersAPI.update(selectedUser.value.id, updateData);
       showAlert.success('User updated successfully');
     }
     
@@ -99,7 +96,7 @@ const handleSubmit = async () => {
 const handleDelete = async (user: User) => {
   const result = await showAlert.confirm(
     'Delete User',
-    `Are you sure you want to delete "${user.name}"?`
+    `Are you sure you want to delete "${user.username}"?`
   );
   
   if (!result.isConfirmed) return;
@@ -107,7 +104,7 @@ const handleDelete = async (user: User) => {
   showAlert.loading();
   
   try {
-    await userAPI.delete(user.id);
+    await usersAPI.delete(user.id);
     await fetchUsers();
     showAlert.success('User deleted successfully');
   } catch (error: any) {
@@ -162,7 +159,7 @@ onMounted(() => {
                 User
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Email
+                Username
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
@@ -178,19 +175,19 @@ onMounted(() => {
                 <div class="flex items-center">
                   <UserCircleIcon class="h-10 w-10 text-gray-400" />
                   <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ user.name }}</div>
+                    <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4">
-                <div class="text-sm text-gray-500">{{ user.email }}</div>
+                <div class="text-sm text-gray-500">{{ user.username }}</div>
               </td>
               <td class="px-6 py-4">
                 <span 
                   class="px-2 py-1 text-xs font-medium rounded-full"
                   :class="{
-                    'bg-purple-100 text-purple-800': user.role === 'admin',
-                    'bg-blue-100 text-blue-800': user.role === 'user'
+                    'bg-purple-100 text-purple-800': user.role === 'pustakawan',
+                    'bg-blue-100 text-blue-800': user.role === 'siswa'
                   }"
                 >
                   {{ user.role }}
@@ -234,27 +231,14 @@ onMounted(() => {
         </div>
 
         <form @submit.prevent="handleSubmit" class="px-6 py-4">
-          <!-- Name -->
+          <!-- Username -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">
-              Name
+              Username
             </label>
             <input
-              v-model="form.name"
+              v-model="form.username"
               type="text"
-              required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <!-- Email -->
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
-            <input
-              v-model="form.email"
-              type="email"
               required
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
@@ -286,8 +270,8 @@ onMounted(() => {
               required
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
+              <option value="siswa">Siswa</option>
+              <option value="pustakawan">Pustakawan</option>
             </select>
           </div>
 

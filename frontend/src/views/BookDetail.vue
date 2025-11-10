@@ -35,10 +35,10 @@ const fetchBookDetail = async () => {
   try {
     loading.value = true;
     const bookId = parseInt(route.params.id as string);
-    
+
     const bookResponse = await booksAPI.getById(bookId);
     book.value = bookResponse.data.book;
-    
+
     const recResponse = await recommendAPI.getByBookId(bookId);
     recommendations.value = recResponse.data.recommendations;
   } catch (err: any) {
@@ -80,10 +80,8 @@ onMounted(() => {
       </div>
       <h3 class="text-xl font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h3>
       <p class="text-gray-600 mb-6">{{ error }}</p>
-      <button 
-        @click="goBack" 
-        class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
-      >
+      <button @click="goBack"
+        class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium">
         Kembali ke Katalog
       </button>
     </div>
@@ -91,10 +89,8 @@ onMounted(() => {
     <!-- Book Detail -->
     <div v-else-if="book" class="max-w-[1400px] mx-auto px-6 lg:px-8 py-8">
       <!-- Back Button -->
-      <button
-        @click="goBack"
-        class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-gray-700 hover:bg-white hover:shadow-sm transition-all duration-200 mb-8 group"
-      >
+      <button @click="goBack"
+        class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-gray-700 hover:bg-white hover:shadow-sm transition-all duration-200 mb-8 group">
         <ArrowLeft class="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
         <span class="font-medium">Kembali ke Katalog</span>
       </button>
@@ -105,13 +101,12 @@ onMounted(() => {
           <!-- Book Cover -->
           <div class="lg:col-span-4">
             <div class="relative group">
-              <div class="absolute inset-0 bg-gradient-to-br from-gray-900/5 to-gray-700/5 rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-500"></div>
-              <div class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-2xl shadow-gray-300/50">
-                <img
-                  :src="getBookCover(book)"
-                  :alt="book.title"
-                  class="w-full h-full object-cover"
-                />
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-gray-900/5 to-gray-700/5 rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-500">
+              </div>
+              <div
+                class="relative aspect-[2/3] rounded-2xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-2xl shadow-gray-300/50">
+                <img :src="getBookCover(book)" :alt="book.title" class="w-full h-full object-cover" />
               </div>
             </div>
           </div>
@@ -144,11 +139,8 @@ onMounted(() => {
                 <span class="font-medium">Genre</span>
               </div>
               <div class="flex flex-wrap gap-2">
-                <span
-                  v-for="genre in book.genre.split(',')"
-                  :key="genre"
-                  :class="['badge-genre', getGenreBadgeClass(genre.trim())]"
-                >
+                <span v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" :key="genre"
+                  :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]">
                   {{ genre.trim() }}
                 </span>
               </div>
@@ -163,7 +155,7 @@ onMounted(() => {
                 <span>Sinopsis</span>
               </h2>
               <p class="text-gray-700 leading-relaxed text-base">
-                {{ book.description }}
+                {{ book.synopsis }}
               </p>
             </div>
 
@@ -183,7 +175,9 @@ onMounted(() => {
         <!-- Header -->
         <div class="flex items-center space-x-3">
           <div class="relative">
-            <div class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse">
+            </div>
             <Sparkles class="h-7 w-7 text-amber-500 relative z-10" />
           </div>
           <div>
@@ -194,26 +188,18 @@ onMounted(() => {
 
         <!-- Recommendations Grid - 6 columns -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div
-            v-for="recBook in recommendations"
-            :key="recBook.id"
-            @click="viewBook(recBook.id)"
-            class="book-card cursor-pointer"
-          >
+          <div v-for="recBook in recommendations" :key="recBook.id" @click="viewBook(recBook.id)"
+            class="book-card cursor-pointer">
             <!-- Book Cover with Match Badge -->
             <div class="book-cover">
-              <img
-                :src="getBookCover(recBook)"
-                :alt="recBook.title"
-                loading="lazy"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              <!-- Match Percentage -->
+              <img :src="getBookCover(recBook)" :alt="recBook.title" loading="lazy" />
               <div
-                v-if="recBook.similarity"
-                class="absolute top-3 right-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm"
-              >
+                class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              </div>
+
+              <!-- Match Percentage -->
+              <div v-if="recBook.similarity"
+                class="absolute top-3 right-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
                 {{ Math.round(recBook.similarity * 100) }}% Match
               </div>
             </div>
@@ -221,7 +207,8 @@ onMounted(() => {
             <!-- Book Info -->
             <div class="p-4 space-y-3">
               <div>
-                <h3 class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
+                <h3
+                  class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
                   {{ recBook.title }}
                 </h3>
                 <p class="text-xs text-gray-500 line-clamp-1">{{ recBook.author }}</p>
@@ -229,11 +216,8 @@ onMounted(() => {
 
               <!-- Genre Badges -->
               <div class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="genre in recBook.genre.split(',').slice(0, 2)"
-                  :key="genre"
-                  :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]"
-                >
+                <span  v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" :key="genre"
+                  :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]">
                   {{ genre.trim() }}
                 </span>
               </div>

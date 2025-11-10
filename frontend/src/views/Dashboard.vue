@@ -1,63 +1,82 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeMount } from 'vue';
+import { ref, onMounted, onBeforeMount, computed } from 'vue';
 import { Plus, Edit, Trash2, BookOpen, Search, X, BookIcon } from 'lucide-vue-next';
-import { booksAPI, type Book } from '../services/api';
+import { booksAPI, genresAPI, type Book, type Genre } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
+import { showAlert } from '../utils/alert';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const books = ref<Book[]>([]);
+const genres = ref<Genre[]>([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const showModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
 const selectedBook = ref<Book | null>(null);
 
-const formData = ref({
+const formData = ref<FormData>(new FormData());
+const form = ref({
   title: '',
   author: '',
-  genre: '',
-  description: '',
+  genreId: '',
+  synopsis: '',
+  coverImage: null as File | null,
 });
 
-const filteredBooks = ref<Book[]>([]);
+const filteredBooks = computed(() => {
+  if (!searchQuery.value) return books.value;
+  
+  const query = searchQuery.value.toLowerCase();
+  return books.value.filter(
+    (book) =>
+      book.title.toLowerCase().includes(query) ||
+      book.author.toLowerCase().includes(query) ||
+      (book.genre_name && book.genre_name.toLowerCase().includes(query))
+  );
+});
+
+// Get unique genres count
+const uniqueGenresCount = computed(() => {
+  const genreNames = books.value
+    .map(b => b.genre_name)
+    .filter(Boolean);
+  return new Set(genreNames).size;
+});
 
 const fetchBooks = async () => {
   try {
     loading.value = true;
-    const response = await booksAPI.getAll();
-    books.value = response.data.books;
-    filteredBooks.value = books.value;
+    const [booksRes, genresRes] = await Promise.all([
+      booksAPI.getAll(),
+      genresAPI.getAll()
+    ]);
+    books.value = booksRes.data.books;
+    genres.value = genresRes.data.data;
   } catch (error) {
     console.error('Failed to fetch books:', error);
+    showAlert.error('Failed to fetch books');
   } finally {
     loading.value = false;
   }
 };
 
-const searchBooks = () => {
-  if (!searchQuery.value) {
-    filteredBooks.value = books.value;
-    return;
+const handleImageChange = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (input.files && input.files[0]) {
+    form.value.coverImage = input.files[0];
   }
-  
-  const query = searchQuery.value.toLowerCase();
-  filteredBooks.value = books.value.filter(
-    (book) =>
-      book.title.toLowerCase().includes(query) ||
-      book.author.toLowerCase().includes(query) ||
-      book.genre.toLowerCase().includes(query)
-  );
 };
 
 const openCreateModal = () => {
   modalMode.value = 'create';
-  formData.value = {
+  form.value = {
     title: '',
     author: '',
-    genre: '',
-    description: '',
+    genreId: '',
+    synopsis: '',
+    coverImage: null,
   };
   showModal.value = true;
 };
@@ -65,11 +84,12 @@ const openCreateModal = () => {
 const openEditModal = (book: Book) => {
   modalMode.value = 'edit';
   selectedBook.value = book;
-  formData.value = {
+  form.value = {
     title: book.title,
     author: book.author,
-    genre: book.genre,
-    description: book.description,
+    genreId: book.genre_id.toString(),
+    synopsis: book.synopsis,
+    coverImage: null,
   };
   showModal.value = true;
 };
@@ -77,39 +97,59 @@ const openEditModal = (book: Book) => {
 const closeModal = () => {
   showModal.value = false;
   selectedBook.value = null;
+  form.value.coverImage = null;
 };
 
 const handleSubmit = async () => {
   try {
+    showAlert.loading();
+    
+    const submitFormData = new FormData();
+    submitFormData.append('title', form.value.title);
+    submitFormData.append('author', form.value.author);
+    submitFormData.append('genreId', form.value.genreId);
+    submitFormData.append('synopsis', form.value.synopsis);
+    
+    if (form.value.coverImage) {
+      submitFormData.append('coverImage', form.value.coverImage);
+    }
+    
     if (modalMode.value === 'create') {
-      await booksAPI.create(formData.value);
+      await booksAPI.create(submitFormData);
+      showAlert.success('Book created successfully');
     } else if (selectedBook.value) {
-      await booksAPI.update(selectedBook.value.id, formData.value);
+      await booksAPI.update(selectedBook.value.id, submitFormData);
+      showAlert.success('Book updated successfully');
     }
     
     await fetchBooks();
     closeModal();
   } catch (error: any) {
-    alert(error.response?.data?.error || 'Failed to save book');
+    showAlert.error(error.response?.data?.error || 'Failed to save book');
   }
 };
 
 const handleDelete = async (book: Book) => {
-  if (!confirm(`Apakah Anda yakin ingin menghapus buku "${book.title}"?`)) {
-    return;
-  }
+  const result = await showAlert.confirm(
+    'Delete Book',
+    `Are you sure you want to delete "${book.title}"?`
+  );
+  
+  if (!result.isConfirmed) return;
   
   try {
+    showAlert.loading();
     await booksAPI.delete(book.id);
     await fetchBooks();
+    showAlert.success('Book deleted successfully');
   } catch (error: any) {
-    alert(error.response?.data?.error || 'Failed to delete book');
+    showAlert.error(error.response?.data?.error || 'Failed to delete book');
   }
 };
 
 const getBookCover = (book: Book): string => {
   if (book.cover_img) {
-    return `http://localhost:3000/uploads/covers/${book.cover_img}`;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${book.cover_img}`;
   }
   return `https://via.placeholder.com/200x300/f8fafc/475569?text=${encodeURIComponent(book.title.substring(0, 15))}`;
 };
@@ -172,8 +212,8 @@ onMounted(() => {
         <div class="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-6 border border-purple-200">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-sm font-medium text-purple-700 mb-1">Kategori</p>
-              <p class="text-3xl font-bold text-purple-900">{{ new Set(books.flatMap(b => b.genre.split(','))).size }}</p>
+              <p class="text-sm font-medium text-purple-700 mb-1">Total Genre</p>
+              <p class="text-3xl font-bold text-purple-900">{{ genres.length }}</p>
             </div>
             <div class="p-3 bg-purple-500 rounded-xl">
               <BookIcon class="h-6 w-6 text-white" />
@@ -190,7 +230,6 @@ onMounted(() => {
             <Search class="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               v-model="searchQuery"
-              @input="searchBooks"
               type="text"
               placeholder="Cari buku..."
               class="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400"
@@ -262,15 +301,9 @@ onMounted(() => {
                   <div class="text-sm text-gray-700">{{ book.author }}</div>
                 </td>
                 <td class="px-6 py-4">
-                  <div class="flex flex-wrap gap-2">
-                    <span
-                      v-for="genre in book.genre.split(',').slice(0, 2)"
-                      :key="genre"
-                      class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200"
-                    >
-                      {{ genre.trim() }}
-                    </span>
-                  </div>
+                  <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                    {{ book.genre_name || 'No Genre' }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center space-x-2">
@@ -316,10 +349,21 @@ onMounted(() => {
 
         <!-- Modal Body -->
         <form @submit.prevent="handleSubmit" class="p-8 space-y-6">
+          <!-- Cover Image -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">Cover Buku</label>
+            <input
+              type="file"
+              accept="image/*"
+              @change="handleImageChange"
+              class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+            />
+          </div>
+
           <div>
             <label class="block text-sm font-semibold text-gray-900 mb-2">Judul Buku</label>
             <input
-              v-model="formData.title"
+              v-model="form.title"
               type="text"
               required
               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900"
@@ -330,7 +374,7 @@ onMounted(() => {
           <div>
             <label class="block text-sm font-semibold text-gray-900 mb-2">Penulis</label>
             <input
-              v-model="formData.author"
+              v-model="form.author"
               type="text"
               required
               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900"
@@ -340,24 +384,30 @@ onMounted(() => {
 
           <div>
             <label class="block text-sm font-semibold text-gray-900 mb-2">Genre</label>
-            <input
-              v-model="formData.genre"
-              type="text"
+            <select
+              v-model="form.genreId"
               required
               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900"
-              placeholder="Contoh: Fantasy, Fiction, Magic"
-            />
-            <p class="text-xs text-gray-500 mt-2">💡 Pisahkan dengan koma</p>
+            >
+              <option value="">Pilih genre</option>
+              <option
+                v-for="genre in genres"
+                :key="genre.id"
+                :value="genre.id"
+              >
+                {{ genre.name }}
+              </option>
+            </select>
           </div>
 
           <div>
-            <label class="block text-sm font-semibold text-gray-900 mb-2">Deskripsi</label>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">Sinopsis</label>
             <textarea
-              v-model="formData.description"
+              v-model="form.synopsis"
               required
               rows="5"
               class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all resize-none text-gray-900"
-              placeholder="Masukkan deskripsi buku"
+              placeholder="Masukkan sinopsis buku"
             ></textarea>
           </div>
 

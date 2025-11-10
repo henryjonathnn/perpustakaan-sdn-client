@@ -1,3 +1,4 @@
+// frontend/src/services/api.ts
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -31,10 +32,12 @@ api.interceptors.response.use(
   }
 );
 
+// ==================== TYPES ====================
 export interface User {
   id: number;
   username: string;
   role: 'siswa' | 'pustakawan';
+  created_at: string;
 }
 
 export interface Book {
@@ -59,7 +62,13 @@ export interface LoginResponse {
   message: string;
 }
 
-// Auth APIs
+export interface Genre {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+// ==================== AUTH APIs ====================
 export const authAPI = {
   login: (username: string, password: string) =>
     api.post<LoginResponse>('/auth/login', { username, password }),
@@ -70,7 +79,7 @@ export const authAPI = {
   logout: () => api.post('/auth/logout'),
 };
 
-// Books APIs
+// ==================== BOOKS APIs ====================
 export const booksAPI = {
   getAll: () => api.get<{ books: Book[] }>('/books'),
   
@@ -80,15 +89,23 @@ export const booksAPI = {
     api.get<{ books: Book[] }>(`/books/search?q=${encodeURIComponent(query)}`),
   
   create: (formData: FormData) =>
-    api.post<{ message: string; bookId: number }>('/books', formData),
+    api.post<{ message: string; bookId: number }>('/books', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
   
   update: (id: number, formData: FormData) =>
-    api.put<{ message: string }>(`/books/${id}`, formData),
+    api.put<{ message: string }>(`/books/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
   
   delete: (id: number) => api.delete<{ message: string }>(`/books/${id}`),
 };
 
-// Recommendation APIs
+// ==================== RECOMMENDATION APIs ====================
 export const recommendAPI = {
   getByBookId: (id: number) =>
     api.get<{ targetBook: Book; recommendations: BookWithSimilarity[] }>(`/recommend/${id}`),
@@ -99,25 +116,12 @@ export const recommendAPI = {
     ),
 };
 
-// Genres APIs
-export interface Genre {
-  id: number;
-  name: string;
-  created_at: string;
-}
-
+// ==================== GENRES APIs ====================
 export const genresAPI = {
   getAll: () => api.get<{ success: boolean; data: Genre[] }>('/genres'),
 };
 
-// Users APIs
-export interface User {
-  id: number;
-  username: string;
-  role: 'siswa' | 'pustakawan';
-  created_at: string;
-}
-
+// ==================== USERS APIs ====================
 export const usersAPI = {
   getAll: () => api.get<{ users: User[] }>('/users'),
   

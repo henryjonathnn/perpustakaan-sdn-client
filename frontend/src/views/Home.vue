@@ -14,13 +14,13 @@ const error = ref('');
 
 const filteredBooks = computed(() => {
   if (!searchQuery.value) return books.value;
-  
+
   const query = searchQuery.value.toLowerCase();
   return books.value.filter(
     (book) =>
       book.title.toLowerCase().includes(query) ||
       book.author.toLowerCase().includes(query) ||
-      book.genre.toLowerCase().includes(query)
+      book.genre_name.toLowerCase().includes(query)
   );
 });
 
@@ -73,7 +73,9 @@ onMounted(() => {
         <div class="text-center mb-12 space-y-4">
           <div class="flex items-center justify-center space-x-3 mb-6">
             <div class="relative">
-              <div class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
+              <div
+                class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse">
+              </div>
               <Sparkles class="h-8 w-8 text-amber-500 relative z-10" />
             </div>
             <h1 class="text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
@@ -88,15 +90,14 @@ onMounted(() => {
         <!-- Search Bar -->
         <div class="max-w-3xl mx-auto">
           <div class="relative group">
-            <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl blur-xl opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
-            <div class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl blur-xl opacity-0 group-hover:opacity-10 transition-opacity duration-500">
+            </div>
+            <div
+              class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
               <Search class="absolute left-6 h-5 w-5 text-gray-400" />
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Cari buku berdasarkan judul, penulis, atau genre..."
-                class="w-full pl-14 pr-6 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400"
-              />
+              <input v-model="searchQuery" type="text" placeholder="Cari buku berdasarkan judul, penulis, atau genre..."
+                class="w-full pl-14 pr-6 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" />
               <button class="mr-3 p-2.5 rounded-xl hover:bg-gray-100 transition-colors">
                 <SlidersHorizontal class="h-5 w-5 text-gray-500" />
               </button>
@@ -124,10 +125,8 @@ onMounted(() => {
         </div>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h3>
         <p class="text-gray-600 mb-6">{{ error }}</p>
-        <button 
-          @click="fetchBooks" 
-          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-lg"
-        >
+        <button @click="fetchBooks"
+          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-lg">
           Coba Lagi
         </button>
       </div>
@@ -139,10 +138,8 @@ onMounted(() => {
         </div>
         <h3 class="text-2xl font-semibold text-gray-900 mb-3">Tidak ada buku ditemukan</h3>
         <p class="text-gray-600 mb-6">Coba gunakan kata kunci pencarian yang berbeda</p>
-        <button 
-          @click="searchQuery = ''" 
-          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
-        >
+        <button @click="searchQuery = ''"
+          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium">
           Reset Pencarian
         </button>
       </div>
@@ -163,27 +160,22 @@ onMounted(() => {
 
         <!-- Books Grid - 6 columns on large screens -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div
-            v-for="book in filteredBooks"
-            :key="book.id"
-            @click="viewBookDetail(book.id)"
-            class="book-card cursor-pointer"
-          >
+          <div v-for="book in filteredBooks" :key="book.id" @click="viewBookDetail(book.id)"
+            class="book-card cursor-pointer">
             <!-- Book Cover -->
             <div class="book-cover">
-              <img
-                :src="getBookCover(book)"
-                :alt="book.title"
-                loading="lazy"
-              />
+              <img :src="getBookCover(book)" :alt="book.title" loading="lazy" />
               <!-- Overlay on hover -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div
+                class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              </div>
             </div>
 
             <!-- Book Info -->
             <div class="p-4 space-y-3">
               <div>
-                <h3 class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
+                <h3
+                  class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
                   {{ book.title }}
                 </h3>
                 <p class="text-xs text-gray-500 line-clamp-1">{{ book.author }}</p>
@@ -191,11 +183,8 @@ onMounted(() => {
 
               <!-- Genre Badges -->
               <div class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="genre in book.genre.split(',').slice(0, 2)"
-                  :key="genre"
-                  :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]"
-                >
+                <span v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" :key="genre"
+                  :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]">
                   {{ genre.trim() }}
                 </span>
               </div>

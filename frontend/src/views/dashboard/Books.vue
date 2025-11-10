@@ -1,6 +1,6 @@
-<!-- src/views/dashboard/Books.vue -->
+<!-- frontend/src/views/dashboard/Books.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import debounce from 'lodash.debounce';
 import { 
   PlusIcon, 
@@ -30,6 +30,12 @@ const form = ref({
   synopsis: '',
 });
 
+// Helper function untuk get image URL
+const getBookCoverUrl = (coverImg: string | null) => {
+  if (!coverImg) return null;
+  return `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/uploads/${coverImg}`;
+};
+
 // Debounced search function
 const debouncedSearch = debounce(async (query: string) => {
   try {
@@ -46,7 +52,11 @@ const debouncedSearch = debounce(async (query: string) => {
 const handleSearch = (event: Event) => {
   const query = (event.target as HTMLInputElement).value;
   searchQuery.value = query;
-  debouncedSearch(query);
+  if (query.trim()) {
+    debouncedSearch(query);
+  } else {
+    fetchBooks();
+  }
 };
 
 const fetchBooks = async () => {
@@ -96,7 +106,7 @@ const openEditModal = (book: Book) => {
     genreId: book.genre_id.toString(),
     synopsis: book.synopsis,
   };
-  imagePreview.value = book.cover_img ? `${import.meta.env.VITE_API_URL}/uploads/${book.cover_img}` : null;
+  imagePreview.value = book.cover_img ? getBookCoverUrl(book.cover_img) : null;
   formData.value = new FormData();
   showModal.value = true;
 };
@@ -190,7 +200,11 @@ onMounted(() => {
 
     <!-- Books Table -->
     <div class="bg-white rounded-lg shadow overflow-hidden">
-      <div class="overflow-x-auto">
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -216,7 +230,7 @@ onMounted(() => {
               <td class="px-6 py-4 whitespace-nowrap">
                 <img
                   v-if="book.cover_img"
-                  :src="`${import.meta.env.VITE_API_URL}/uploads/${book.cover_img}`"
+                  :src="getBookCoverUrl(book.cover_img) || ''"
                   :alt="book.title"
                   class="h-16 w-12 object-cover rounded"
                 />
@@ -258,7 +272,7 @@ onMounted(() => {
     <!-- Modal -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
     >
       <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200">
