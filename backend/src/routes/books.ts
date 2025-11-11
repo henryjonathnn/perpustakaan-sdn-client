@@ -27,6 +27,41 @@ books.get('/', async (c) => {
 });
 
 /**
+ * GET /books/search?q=query
+ * Search books by title, author, or synopsis (public access)
+ * IMPORTANT: Must be defined BEFORE /:id route
+ */
+books.get('/search', async (c) => {
+  try {
+    const query = c.req.query('q') || '';
+    const genreId = c.req.query('genre') || '';
+    
+    let sql = `
+      SELECT b.*, g.name as genre_name 
+      FROM books b 
+      INNER JOIN genres g ON b.genre_id = g.id 
+      WHERE b.title LIKE ? OR b.author LIKE ? OR b.synopsis LIKE ?
+    `;
+    let params = [`%${query}%`, `%${query}%`, `%${query}%`];
+    
+    if (genreId) {
+      sql += ' AND b.genre_id = ?';
+      params.push(genreId);
+    }
+    
+    sql += ' ORDER BY b.created_at DESC';
+    
+    const [rows] = await pool.query<Book[]>(sql, params);
+    
+    return c.json({ books: rows });
+  } catch (error) {
+    console.error('Search books error:', error);
+    return c.json({ error: 'Failed to search books' }, 500);
+  }
+});
+
+
+/**
  * GET /books/:id
  * Get single book by ID (public access)
  */
@@ -185,39 +220,6 @@ books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
   } catch (error) {
     console.error('Delete book error:', error);
     return c.json({ error: 'Failed to delete book' }, 500);
-  }
-});
-
-/**
- * GET /books/search?q=query
- * Search books by title (public access)
- */
-books.get('/search', async (c) => {
-  try {
-    const query = c.req.query('q') || '';
-    const genreId = c.req.query('genre') || '';
-    
-    let sql = `
-      SELECT b.*, g.name as genre_name 
-      FROM books b 
-      INNER JOIN genres g ON b.genre_id = g.id 
-      WHERE b.title LIKE ? OR b.author LIKE ? OR b.synopsis LIKE ?
-    `;
-    let params = [`%${query}%`, `%${query}%`, `%${query}%`];
-    
-    if (genreId) {
-      sql += ' AND b.genre_id = ?';
-      params.push(genreId);
-    }
-    
-    sql += ' ORDER BY b.created_at DESC';
-    
-    const [rows] = await pool.query<Book[]>(sql, params);
-    
-    return c.json({ books: rows });
-  } catch (error) {
-    console.error('Search books error:', error);
-    return c.json({ error: 'Failed to search books' }, 500);
   }
 });
 
