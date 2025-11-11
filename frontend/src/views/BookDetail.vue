@@ -14,18 +14,18 @@ const error = ref('');
 
 const getBookCover = (bookData: Book): string => {
   if (bookData.cover_img) {
-    return `http://localhost:3000/uploads/covers/${bookData.cover_img}`;
+    // Konsisten dengan Home.vue - menggunakan /uploads/ langsung
+    return `http://localhost:3000/uploads/${bookData.cover_img}`;
   }
   return `https://via.placeholder.com/500x750/f8fafc/475569?text=${encodeURIComponent(bookData.title.substring(0, 20))}`;
 };
-
 const getGenreBadgeClass = (genre: string): string => {
   const lowerGenre = genre.toLowerCase();
   if (lowerGenre.includes('fantasy')) return 'badge-fantasy';
-  if (lowerGenre.includes('fiction')) return 'badge-fiction';
+  if (lowerGenre.includes('fiction') || lowerGenre.includes('fiksi')) return 'badge-fiction';
   if (lowerGenre.includes('magic')) return 'badge-magic';
   if (lowerGenre.includes('adventure')) return 'badge-adventure';
-  if (lowerGenre.includes('childrens') || lowerGenre.includes('children')) return 'badge-childrens';
+  if (lowerGenre.includes('childrens') || lowerGenre.includes('children') || lowerGenre.includes('anak')) return 'badge-childrens';
   if (lowerGenre.includes('mythology')) return 'badge-mythology';
   if (lowerGenre.includes('dragon')) return 'badge-dragons';
   return 'badge-default';
@@ -43,6 +43,7 @@ const fetchBookDetail = async () => {
     recommendations.value = recResponse.data.recommendations;
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch book details';
+    console.error('Fetch book detail error:', err);
   } finally {
     loading.value = false;
   }
@@ -216,7 +217,7 @@ onMounted(() => {
 
               <!-- Genre Badges -->
               <div class="flex flex-wrap gap-1.5">
-                <span  v-for="genre in (book.genre_name ? book.genre_name.split(',').slice(0, 2) : [])" :key="genre"
+                <span v-for="genre in (recBook.genre_name ? recBook.genre_name.split(',').slice(0, 2) : [])" :key="genre"
                   :class="['badge-genre text-[10px]', getGenreBadgeClass(genre.trim())]">
                   {{ genre.trim() }}
                 </span>

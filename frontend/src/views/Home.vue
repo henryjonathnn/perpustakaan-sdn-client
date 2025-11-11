@@ -1,73 +1,72 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash.debounce';
-import { Search, BookOpen, Sparkles, SlidersHorizontal, Loader2 } from 'lucide-vue-next';
+import { Search, BookOpen, Sparkles, Loader2 } from 'lucide-vue-next';
 import { booksAPI, type Book } from '../services/api';
-import { showAlert } from '../utils/alert';
 
 const router = useRouter();
-const books = ref<Book[]>([]);
+const allBooks = ref<Book[]>([]); // Simpan semua buku asli
+const displayedBooks = ref<Book[]>([]); // Buku yang ditampilkan
 const searchQuery = ref('');
 const loading = ref(true);
 const searching = ref(false);
 const error = ref('');
-
-const filteredBooks = computed(() => {
-  if (!searchQuery.value.trim()) return books.value;
-  
-  const query = searchQuery.value.toLowerCase();
-  return books.value.filter(
-    (book) =>
-      book.title.toLowerCase().includes(query) ||
-      book.author.toLowerCase().includes(query) ||
-      (book.genre_name && book.genre_name.toLowerCase().includes(query))
-  );
-});
 
 const fetchBooks = async () => {
   try {
     loading.value = true;
     error.value = '';
     const response = await booksAPI.getAll();
-    books.value = response.data.books;
+    allBooks.value = response.data.books;
+    displayedBooks.value = response.data.books;
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Gagal memuat buku';
-    showAlert.error(error.value);
+    console.error('Fetch books error:', err);
   } finally {
     loading.value = false;
   }
 };
 
-// Debounced search function
-const debouncedSearch = debounce(async (query: string) => {
-  if (!query.trim()) {
-    await fetchBooks();
-    return;
-  }
-  
+// Filter lokal untuk instant feedback (TIDAK DIPAKAI - dihapus aja)
+// const filterBooksLocally = (query: string) => {
+//   ...
+// };
+
+// Search API dengan debounce
+const performSearch = async (query: string) => {
   try {
     searching.value = true;
     const response = await booksAPI.search(query);
-    books.value = response.data.books;
+    displayedBooks.value = response.data.books;
   } catch (err: any) {
     console.error('Search error:', err);
-    showAlert.error('Gagal mencari buku');
+    // Jika error, tetap kosongkan hasil
+    displayedBooks.value = [];
   } finally {
     searching.value = false;
   }
+};
+
+// Debounced search dengan lodash
+const debouncedSearch = debounce((query: string) => {
+  if (!query.trim()) {
+    displayedBooks.value = allBooks.value;
+    searching.value = false;
+    return;
+  }
+  performSearch(query);
 }, 500);
 
-// Watch search query changes
+// Watch search query - HANYA panggil debounced function
 watch(searchQuery, (newQuery) => {
+  // Set searching indicator
   if (newQuery.trim()) {
     searching.value = true;
-    debouncedSearch(newQuery);
-  } else {
-    debouncedSearch.cancel();
-    searching.value = false;
-    fetchBooks();
   }
+  
+  // Panggil debounced search (filter lokal + API)
+  debouncedSearch(newQuery);
 });
 
 const getGenreBadgeClass = (genre: string): string => {
@@ -95,6 +94,8 @@ const viewBookDetail = (id: number) => {
 
 const clearSearch = () => {
   searchQuery.value = '';
+  debouncedSearch.cancel(); // Cancel pending debounced calls
+  searching.value = false;
 };
 
 onMounted(() => {
@@ -181,7 +182,7 @@ onMounted(() => {
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredBooks.length === 0" class="text-center py-32">
+      <div v-else-if="displayedBooks.length === 0" class="text-center py-32">
         <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 mb-6">
           <BookOpen class="h-10 w-10 text-gray-400" />
         </div>
@@ -204,7 +205,7 @@ onMounted(() => {
               {{ searchQuery ? 'Hasil Pencarian' : 'Semua Koleksi' }}
             </h2>
             <p class="text-gray-600">
-              Menampilkan <span class="font-semibold text-gray-900">{{ filteredBooks.length }}</span> buku
+              Menampilkan <span class="font-semibold text-gray-900">{{ displayedBooks.length }}</span> buku
               <span v-if="searching" class="text-gray-400">(mencari...)</span>
             </p>
           </div>
@@ -212,7 +213,7 @@ onMounted(() => {
 
         <!-- Books Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div v-for="book in filteredBooks" :key="book.id" @click="viewBookDetail(book.id)"
+          <div v-for="book in displayedBooks" :key="book.id" @click="viewBookDetail(book.id)"
             class="book-card cursor-pointer group">
             <!-- Book Cover -->
             <div class="book-cover">
@@ -253,6 +254,7 @@ onMounted(() => {
 .line-clamp-1 {
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -260,6 +262,7 @@ onMounted(() => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
