@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { BookOpen, User, LogOut, LayoutDashboard, Menu, X } from 'lucide-vue-next';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { showToast } from '../utils/toast';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -15,6 +16,7 @@ const isPustakawan = computed(() => authStore.user?.role === 'pustakawan');
 const handleLogout = async () => {
   try {
     await authAPI.logout();
+    showToast.success('Logout berhasil!');
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
@@ -41,7 +43,7 @@ const navigateTo = (path: string) => {
             <div class="p-2 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl group-hover:shadow-lg transition-all">
               <BookOpen class="h-5 w-5 text-white" />
             </div>
-            <span class="font-bold text-xl text-gray-900">Perpustakaan SDN</span>
+            <span class="font-bold text-xl text-gray-900">Perpustakaan Cemerlang</span>
           </button>
         </div>
 
@@ -65,15 +67,18 @@ const navigateTo = (path: string) => {
             </button>
 
             <div class="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
-              <div class="flex items-center space-x-2.5">
+              <button
+                @click="navigateTo('/profile')"
+                class="flex items-center space-x-2.5 hover:bg-gray-50 rounded-xl px-3 py-2 transition-colors"
+              >
                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
                   <User class="h-4 w-4 text-white" />
                 </div>
-                <div class="flex flex-col">
+                <div class="flex flex-col text-left">
                   <span class="text-sm font-semibold text-gray-900">{{ authStore.user.username }}</span>
                   <span class="text-xs text-gray-500">{{ authStore.user.role }}</span>
                 </div>
-              </div>
+              </button>
               <button
                 @click="handleLogout"
                 class="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-600 transition"
@@ -134,15 +139,18 @@ const navigateTo = (path: string) => {
           </button>
 
           <div class="px-4 py-3 border-t mt-2 pt-4">
-            <div class="flex items-center space-x-3 mb-3">
+            <button
+              @click="navigateTo('/profile')"
+              class="flex items-center space-x-3 mb-3 w-full hover:bg-gray-50 rounded-xl p-2 transition-colors"
+            >
               <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
                 <User class="h-5 w-5 text-white" />
               </div>
-              <div class="flex flex-col">
+              <div class="flex flex-col text-left">
                 <span class="font-semibold text-gray-900">{{ authStore.user.username }}</span>
                 <span class="text-sm text-gray-500">{{ authStore.user.role }}</span>
               </div>
-            </div>
+            </button>
             <button
               @click="handleLogout"
               class="flex items-center justify-center space-x-2 w-full px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"

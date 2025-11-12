@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { BookOpen, LogIn, Eye, EyeOff } from 'lucide-vue-next';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { showToast } from '../utils/toast';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -29,11 +30,11 @@ const handleLogin = async () => {
     localStorage.setItem('token', response.data.token);
     localStorage.setItem('user', JSON.stringify(response.data.user));
     
-    // Update auth store and wait for it to complete
     authStore.setUser(response.data.user);
     
-    // Wait for auth store to update
     await new Promise(resolve => setTimeout(resolve, 100));
+    
+    showToast.success('Login berhasil!');
     
     if (response.data.user.role === 'pustakawan') {
       await router.push('/dashboard');
@@ -42,6 +43,7 @@ const handleLogin = async () => {
     }
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Login gagal. Silakan coba lagi.';
+    showToast.error(error.value);
   } finally {
     loading.value = false;
   }
@@ -62,7 +64,7 @@ const handleLogin = async () => {
           </div>
         </div>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Selamat Datang Kembali</h1>
-        <p class="text-gray-600">Masuk ke perpustakaan digital Anda</p>
+        <p class="text-gray-600">Masuk ke Perpustakaan Cemerlang</p>
       </div>
 
       <!-- Login Card -->
@@ -134,23 +136,6 @@ const handleLogin = async () => {
               Daftar sekarang
             </router-link>
           </p>
-        </div>
-
-        <!-- Demo Accounts -->
-        <div class="mt-8 pt-8 border-t border-gray-200">
-          <p class="text-xs font-semibold text-gray-500 text-center mb-4">AKUN DEMO</p>
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-              <p class="font-semibold text-gray-900 text-sm mb-2">👨‍🎓 Siswa</p>
-              <p class="text-xs text-gray-600 font-mono">siswa1</p>
-              <p class="text-xs text-gray-600 font-mono">password123</p>
-            </div>
-            <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-              <p class="font-semibold text-gray-900 text-sm mb-2">📚 Pustakawan</p>
-              <p class="text-xs text-gray-600 font-mono">pustakawan1</p>
-              <p class="text-xs text-gray-600 font-mono">password123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -1,23 +1,25 @@
-<!-- frontend/src/views/dashboard/Users.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { 
   PlusIcon, 
   PencilIcon, 
   TrashIcon, 
   MagnifyingGlassIcon, 
   XMarkIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  EyeIcon
 } from '@heroicons/vue/24/outline';
 import { usersAPI, type User } from '../../services/api';
-import { showAlert } from '../../utils/alert';
+import { showToast, showConfirm } from '../../utils/toast';
 
 const users = ref<User[]>([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const showModal = ref(false);
+const showDetailModal = ref(false);
 const modalMode = ref<'create' | 'edit'>('create');
 const selectedUser = ref<User | null>(null);
+const selectedUsers = ref<number[]>([]);
 
 const form = ref({
   username: '',
@@ -25,11 +27,65 @@ const form = ref({
   role: 'siswa' as 'siswa' | 'pustakawan',
 });
 
-// Debounced search function
+// Computed
+const allSelected = computed(() => 
+  filteredUsers.value.length > 0 && selectedUsers.value.length === filteredUsers.value.length
+);
+
+const filteredUsers = computed(() => {
+  if (!searchQuery.value.trim()) return users.value;
+  
+  const query = searchQuery.value.toLowerCase();
+  return users.value.filter(user => 
+    user.username.toLowerCase().includes(query) ||
+    user.role.toLowerCase().includes(query)
+  );
+});
+
+const toggleSelectAll = () => {
+  if (allSelected.value) {
+    selectedUsers.value = [];
+  } else {
+    selectedUsers.value = filteredUsers.value.map(user => user.id);
+  }
+};
+
+const toggleSelectUser = (userId: number) => {
+  const index = selectedUsers.value.indexOf(userId);
+  if (index > -1) {
+    selectedUsers.value.splice(index, 1);
+  } else {
+    selectedUsers.value.push(userId);
+  }
+};
+
+const bulkDelete = () => {
+  if (selectedUsers.value.length === 0) {
+    showToast.warning('Pilih user yang ingin dihapus');
+    return;
+  }
+
+  showConfirm(
+    'Hapus User Terpilih',
+    `Apakah Anda yakin ingin menghapus ${selectedUsers.value.length} user?`,
+    async () => {
+      try {
+        await Promise.all(
+          selectedUsers.value.map(id => usersAPI.delete(id))
+        );
+        await fetchUsers();
+        selectedUsers.value = [];
+        showToast.success(`User berhasil dihapus`);
+      } catch (error: any) {
+        showToast.error('Gagal menghapus beberapa user');
+      }
+    }
+  );
+};
+
 const handleSearch = (event: Event) => {
   const query = (event.target as HTMLInputElement).value;
   searchQuery.value = query;
-  // Implement search functionality if needed
 };
 
 const fetchUsers = async () => {
@@ -38,7 +94,7 @@ const fetchUsers = async () => {
     const response = await usersAPI.getAll();
     users.value = response.data.users;
   } catch (error) {
-    showAlert.error('Failed to fetch users');
+    showToast.error('Gagal memuat users');
   } finally {
     loading.value = false;
   }
@@ -59,57 +115,64 @@ const openEditModal = (user: User) => {
   selectedUser.value = user;
   form.value = {
     username: user.username,
-    password: '', // Don't populate password for security
+    password: '',
     role: user.role,
   };
   showModal.value = true;
 };
 
+const openDetailModal = (user: User) => {
+  selectedUser.value = user;
+  showDetailModal.value = true;
+};
+
 const closeModal = () => {
   showModal.value = false;
+  showDetailModal.value = false;
   selectedUser.value = null;
 };
 
-const handleSubmit = async () => {
-  showAlert.loading();
-  
-  try {
-    if (modalMode.value === 'create') {
-      await usersAPI.create(form.value);
-      showAlert.success('User created successfully');
-    } else if (selectedUser.value) {
-      const updateData: any = { ...form.value };
-      if (!updateData.password) {
-        delete updateData.password; // Don't send empty password
+const handleSubmit = () => {
+  showConfirm(
+    modalMode.value === 'create' ? 'Tambah User' : 'Edit User',
+    `Apakah Anda yakin ingin ${modalMode.value === 'create' ? 'menambah' : 'mengubah'} user ini?`,
+    async () => {
+      try {
+        if (modalMode.value === 'create') {
+          await usersAPI.create(form.value);
+          showToast.success('User berhasil ditambahkan');
+        } else if (selectedUser.value) {
+          const updateData: any = { ...form.value };
+          if (!updateData.password) {
+            delete updateData.password;
+          }
+          await usersAPI.update(selectedUser.value.id, updateData);
+          showToast.success('User berhasil diperbarui');
+        }
+
+        await fetchUsers();
+        closeModal();
+      } catch (error: any) {
+        showToast.error(error.response?.data?.error || 'Gagal menyimpan user');
       }
-      await usersAPI.update(selectedUser.value.id, updateData);
-      showAlert.success('User updated successfully');
     }
-    
-    await fetchUsers();
-    closeModal();
-  } catch (error: any) {
-    showAlert.error(error.response?.data?.error || 'Failed to save user');
-  }
+  );
 };
 
-const handleDelete = async (user: User) => {
-  const result = await showAlert.confirm(
-    'Delete User',
-    `Are you sure you want to delete "${user.username}"?`
+const handleDelete = (user: User) => {
+  showConfirm(
+    'Hapus User',
+    `Apakah Anda yakin ingin menghapus "${user.username}"?`,
+    async () => {
+      try {
+        await usersAPI.delete(user.id);
+        await fetchUsers();
+        showToast.success('User berhasil dihapus');
+      } catch (error: any) {
+        showToast.error(error.response?.data?.error || 'Gagal menghapus user');
+      }
+    }
   );
-  
-  if (!result.isConfirmed) return;
-  
-  showAlert.loading();
-  
-  try {
-    await usersAPI.delete(user.id);
-    await fetchUsers();
-    showAlert.success('User deleted successfully');
-  } catch (error: any) {
-    showAlert.error(error.response?.data?.error || 'Failed to delete user');
-  }
 };
 
 onMounted(() => {
@@ -121,8 +184,8 @@ onMounted(() => {
   <div>
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">Users Management</h1>
-      <p class="text-gray-600">Manage user accounts and permissions</p>
+      <h1 class="text-2xl font-bold text-gray-900">Kelola Users</h1>
+      <p class="text-gray-600">Kelola akun pengguna dan pustakawan</p>
     </div>
 
     <!-- Actions -->
@@ -134,9 +197,20 @@ onMounted(() => {
           v-model="searchQuery"
           @input="handleSearch"
           type="text"
-          placeholder="Search users..."
+          placeholder="Cari users..."
           class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
+      </div>
+
+      <!-- Bulk Actions -->
+      <div v-if="selectedUsers.length > 0" class="flex items-center gap-2">
+        <span class="text-sm text-gray-600">{{ selectedUsers.length }} dipilih</span>
+        <button
+          @click="bulkDelete"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
+        >
+          Hapus Terpilih
+        </button>
       </div>
 
       <!-- Add User Button -->
@@ -145,7 +219,7 @@ onMounted(() => {
         class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
       >
         <PlusIcon class="h-5 w-5 mr-2" />
-        Add User
+        Tambah User
       </button>
     </div>
 
@@ -155,6 +229,14 @@ onMounted(() => {
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
+              <th class="px-6 py-3">
+                <input
+                  type="checkbox"
+                  :checked="allSelected"
+                  @change="toggleSelectAll"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 User
               </th>
@@ -165,17 +247,30 @@ onMounted(() => {
                 Role
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                Aksi
               </th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="user in users" :key="user.id">
+            <tr v-for="user in filteredUsers" :key="user.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4">
+                <input
+                  type="checkbox"
+                  :checked="selectedUsers.includes(user.id)"
+                  @change="toggleSelectUser(user.id)"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+              </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <UserCircleIcon class="h-10 w-10 text-gray-400" />
                   <div class="ml-4">
-                    <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                    <button
+                      @click="openDetailModal(user)"
+                      class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                    >
+                      {{ user.username }}
+                    </button>
                   </div>
                 </div>
               </td>
@@ -193,16 +288,25 @@ onMounted(() => {
                   {{ user.role }}
                 </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                <button
+                  @click="openDetailModal(user)"
+                  class="text-green-600 hover:text-green-900"
+                  title="Detail"
+                >
+                  <EyeIcon class="h-5 w-5" />
+                </button>
                 <button
                   @click="openEditModal(user)"
-                  class="text-indigo-600 hover:text-indigo-900 mr-4"
+                  class="text-indigo-600 hover:text-indigo-900"
+                  title="Edit"
                 >
                   <PencilIcon class="h-5 w-5" />
                 </button>
                 <button
                   @click="handleDelete(user)"
                   class="text-red-600 hover:text-red-900"
+                  title="Hapus"
                 >
                   <TrashIcon class="h-5 w-5" />
                 </button>
@@ -213,16 +317,16 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Create/Edit Modal -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
     >
       <div class="bg-white rounded-lg max-w-md w-full">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-medium text-gray-900">
-              {{ modalMode === 'create' ? 'Add New User' : 'Edit User' }}
+              {{ modalMode === 'create' ? 'Tambah User Baru' : 'Edit User' }}
             </h3>
             <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
               <XMarkIcon class="h-6 w-6" />
@@ -231,7 +335,6 @@ onMounted(() => {
         </div>
 
         <form @submit.prevent="handleSubmit" class="px-6 py-4">
-          <!-- Username -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Username
@@ -244,12 +347,11 @@ onMounted(() => {
             />
           </div>
 
-          <!-- Password -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Password
               <span v-if="modalMode === 'edit'" class="text-sm text-gray-500">
-                (Leave blank to keep current password)
+                (Kosongkan jika tidak ingin mengubah)
               </span>
             </label>
             <input
@@ -260,7 +362,6 @@ onMounted(() => {
             />
           </div>
 
-          <!-- Role -->
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Role
@@ -275,23 +376,81 @@ onMounted(() => {
             </select>
           </div>
 
-          <!-- Buttons -->
           <div class="flex justify-end space-x-3">
             <button
               type="button"
               @click="closeModal"
               class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"
               class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              {{ modalMode === 'create' ? 'Create' : 'Update' }}
+              {{ modalMode === 'create' ? 'Tambah' : 'Perbarui' }}
             </button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div
+      v-if="showDetailModal && selectedUser"
+      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
+      @click.self="closeModal"
+    >
+      <div class="bg-white rounded-lg max-w-md w-full">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">Detail User</h3>
+            <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
+              <XMarkIcon class="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        <div class="px-6 py-6 space-y-6">
+          <!-- Avatar -->
+          <div class="flex justify-center">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
+              <span class="text-white text-3xl font-bold">
+                {{ selectedUser.username.charAt(0).toUpperCase() }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="space-y-4">
+            <div>
+              <label class="text-sm font-medium text-gray-500">Username</label>
+              <p class="mt-1 text-base font-semibold text-gray-900">{{ selectedUser.username }}</p>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Role</label>
+              <div class="mt-1">
+                <span 
+                  class="inline-flex px-3 py-1 text-sm font-medium rounded-full"
+                  :class="{
+                    'bg-purple-100 text-purple-800': selectedUser.role === 'pustakawan',
+                    'bg-blue-100 text-blue-800': selectedUser.role === 'siswa'
+                  }"
+                >
+                  {{ selectedUser.role === 'pustakawan' ? '📚 Pustakawan' : '👨‍🎓 Siswa' }}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label class="text-sm font-medium text-gray-500">Terdaftar Sejak</label>
+              <p class="mt-1 text-base text-gray-900">
+                {{ new Date(selectedUser.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' }) }}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

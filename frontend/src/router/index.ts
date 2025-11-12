@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/books/:id',
+    path: '/books/:slug', // Changed from :id to :slug
     name: 'BookDetail',
     component: () => import('../views/BookDetail.vue'),
     meta: { requiresAuth: false },
@@ -26,6 +26,12 @@ const routes: RouteRecordRaw[] = [
     name: 'Register',
     component: () => import('../views/Register.vue'),
     meta: { requiresAuth: false, hideForAuth: true },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true },
   },
   {
     path: '/dashboard',
@@ -52,9 +58,9 @@ const routes: RouteRecordRaw[] = [
         component: () => import('../views/dashboard/Users.vue'),
       },
       {
-        path: 'settings',
-        name: 'DashboardSettings',
-        component: () => import('../views/dashboard/Settings.vue'),
+        path: 'genres',
+        name: 'DashboardGenres',
+        component: () => import('../views/dashboard/Genres.vue'),
       },
     ],
   },
@@ -101,7 +107,7 @@ router.beforeEach((to, from, next) => {
 
   // Check if route requires pustakawan role
   if (to.meta.requiresPustakawan && authStore.user?.role !== 'pustakawan') {
-    next('/403');
+    next('/');
     return;
   }
 

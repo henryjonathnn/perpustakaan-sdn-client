@@ -4,9 +4,10 @@ import { calculateTFIDF, cosineSimilarity } from './tfidf';
 
 /**
  * Combine book features into single text
+ * FIX: Gunakan 'synopsis' bukan 'description'
  */
 function combineFeatures(book: Book): string {
-  return `${book.title} ${book.genre} ${book.description}`;
+  return `${book.title} ${book.author} ${book.synopsis || ''}`;
 }
 
 /**

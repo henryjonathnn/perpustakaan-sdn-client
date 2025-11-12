@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ArrowLeft, BookOpen, User, Tag, Sparkles, Clock } from 'lucide-vue-next';
-import { booksAPI, recommendAPI, type Book, type BookWithSimilarity } from '../services/api';
+import { booksAPI, recommendAPI, createSlug, type Book, type BookWithSimilarity } from '../services/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -14,11 +14,11 @@ const error = ref('');
 
 const getBookCover = (bookData: Book): string => {
   if (bookData.cover_img) {
-    // Konsisten dengan Home.vue - menggunakan /uploads/ langsung
     return `http://localhost:3000/uploads/${bookData.cover_img}`;
   }
   return `https://via.placeholder.com/500x750/f8fafc/475569?text=${encodeURIComponent(bookData.title.substring(0, 20))}`;
 };
+
 const getGenreBadgeClass = (genre: string): string => {
   const lowerGenre = genre.toLowerCase();
   if (lowerGenre.includes('fantasy')) return 'badge-fantasy';
@@ -51,12 +51,20 @@ const fetchBookDetail = async () => {
 
 const viewBook = (id: number) => {
   router.push(`/books/${id}`);
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Tidak perlu scroll manual, akan di-handle oleh watch
 };
 
 const goBack = () => {
   router.push('/');
 };
+
+// FIX: Watch route params untuk reload data ketika ID berubah
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    fetchBookDetail();
+  }
+}, { immediate: false });
 
 onMounted(() => {
   fetchBookDetail();
@@ -187,7 +195,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Recommendations Grid - 6 columns -->
+        <!-- Recommendations Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
           <div v-for="recBook in recommendations" :key="recBook.id" @click="viewBook(recBook.id)"
             class="book-card cursor-pointer">

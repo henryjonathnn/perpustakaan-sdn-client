@@ -68,6 +68,19 @@ export interface Genre {
   created_at: string;
 }
 
+// ==================== HELPER FUNCTIONS ====================
+/**
+ * Create URL-friendly slug from title
+ */
+export function createSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .trim();
+}
+
 // ==================== AUTH APIs ====================
 export const authAPI = {
   login: (username: string, password: string) =>
@@ -83,20 +96,29 @@ export const authAPI = {
 export const booksAPI = {
   getAll: () => api.get<{ books: Book[] }>('/books'),
   
+  /**
+   * Get book by SLUG (title with hyphens)
+   * Example: getBySlug('matematika-untuk-sd-mi-kelas-1')
+   */
+  getBySlug: (slug: string) => api.get<{ book: Book }>(`/books/${slug}`),
+  
+  /**
+   * Get book by ID (for admin/internal use)
+   */
   getById: (id: number) => api.get<{ book: Book }>(`/books/${id}`),
   
   search: (query: string) =>
     api.get<{ books: Book[] }>(`/books/search?q=${encodeURIComponent(query)}`),
   
   create: (formData: FormData) =>
-    api.post<{ message: string; bookId: number }>('/books', formData, {
+    api.post<{ message: string; bookId: number; slug: string }>('/books', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     }),
   
   update: (id: number, formData: FormData) =>
-    api.put<{ message: string }>(`/books/${id}`, formData, {
+    api.put<{ message: string; slug: string }>(`/books/${id}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -119,6 +141,15 @@ export const recommendAPI = {
 // ==================== GENRES APIs ====================
 export const genresAPI = {
   getAll: () => api.get<{ success: boolean; data: Genre[] }>('/genres'),
+  
+  create: (data: { name: string }) =>
+    api.post<{ success: boolean; message: string; data: Genre }>('/genres', data),
+  
+  update: (id: number, data: { name: string }) =>
+    api.put<{ success: boolean; message: string; data: Genre }>(`/genres/${id}`, data),
+  
+  delete: (id: number) =>
+    api.delete<{ success: boolean; message: string }>(`/genres/${id}`),
 };
 
 // ==================== USERS APIs ====================

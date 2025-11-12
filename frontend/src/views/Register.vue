@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { BookOpen, UserPlus, Eye, EyeOff } from 'lucide-vue-next';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { showToast } from '../utils/toast';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -11,7 +12,6 @@ const authStore = useAuthStore();
 const username = ref('');
 const password = ref('');
 const confirmPassword = ref('');
-const role = ref<'siswa' | 'pustakawan'>('siswa');
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const loading = ref(false);
@@ -20,16 +20,19 @@ const error = ref('');
 const handleRegister = async () => {
   if (!username.value || !password.value || !confirmPassword.value) {
     error.value = 'Semua field harus diisi';
+    showToast.error(error.value);
     return;
   }
 
   if (password.value !== confirmPassword.value) {
     error.value = 'Password tidak cocok';
+    showToast.error(error.value);
     return;
   }
 
   if (password.value.length < 6) {
     error.value = 'Password minimal 6 karakter';
+    showToast.error(error.value);
     return;
   }
 
@@ -37,25 +40,23 @@ const handleRegister = async () => {
     loading.value = true;
     error.value = '';
     
-    await authAPI.register(username.value, password.value, role.value);
+    // Register dengan role siswa (default)
+    await authAPI.register(username.value, password.value, 'siswa');
     
+    // Auto login setelah register
     const loginResponse = await authAPI.login(username.value, password.value);
     localStorage.setItem('token', loginResponse.data.token);
     localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
     
-    // Update auth store
     authStore.setUser(loginResponse.data.user);
     
-    // Wait for auth store to update
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    if (loginResponse.data.user.role === 'pustakawan') {
-      await router.push('/dashboard');
-    } else {
-      await router.push('/');
-    }
+    showToast.success('Registrasi berhasil! Selamat datang!');
+    await router.push('/');
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Registrasi gagal. Silakan coba lagi.';
+    showToast.error(error.value);
   } finally {
     loading.value = false;
   }
@@ -76,7 +77,7 @@ const handleRegister = async () => {
           </div>
         </div>
         <h1 class="text-3xl font-bold text-gray-900 mb-2">Buat Akun Baru</h1>
-        <p class="text-gray-600">Bergabung dengan perpustakaan digital</p>
+        <p class="text-gray-600">Bergabung dengan Perpustakaan Cemerlang</p>
       </div>
 
       <!-- Register Card -->
@@ -100,47 +101,6 @@ const handleRegister = async () => {
               class="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400"
               :disabled="loading"
             />
-          </div>
-
-          <!-- Role Selection -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-900 mb-3">
-              Daftar Sebagai
-            </label>
-            <div class="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                @click="role = 'siswa'"
-                :class="[
-                  'relative overflow-hidden px-4 py-4 rounded-xl border-2 font-semibold transition-all duration-300',
-                  role === 'siswa'
-                    ? 'border-gray-900 bg-gray-900 text-white shadow-lg shadow-gray-900/30'
-                    : 'border-gray-300 hover:border-gray-400 text-gray-700'
-                ]"
-                :disabled="loading"
-              >
-                <span class="relative z-10 flex items-center justify-center space-x-2">
-                  <span>👨‍🎓</span>
-                  <span>Siswa</span>
-                </span>
-              </button>
-              <button
-                type="button"
-                @click="role = 'pustakawan'"
-                :class="[
-                  'relative overflow-hidden px-4 py-4 rounded-xl border-2 font-semibold transition-all duration-300',
-                  role === 'pustakawan'
-                    ? 'border-gray-900 bg-gray-900 text-white shadow-lg shadow-gray-900/30'
-                    : 'border-gray-300 hover:border-gray-400 text-gray-700'
-                ]"
-                :disabled="loading"
-              >
-                <span class="relative z-10 flex items-center justify-center space-x-2">
-                  <span>📚</span>
-                  <span>Pustakawan</span>
-                </span>
-              </button>
-            </div>
           </div>
 
           <!-- Password -->
@@ -193,6 +153,13 @@ const handleRegister = async () => {
                 <EyeOff v-else class="h-5 w-5" />
               </button>
             </div>
+          </div>
+
+          <!-- Info Badge -->
+          <div class="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <p class="text-sm text-blue-800 text-center">
+              Akun akan terdaftar sebagai <span class="font-semibold">Siswa</span>
+            </p>
           </div>
 
           <!-- Submit Button -->

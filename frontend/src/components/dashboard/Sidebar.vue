@@ -1,29 +1,22 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import {
   LayoutDashboard,
   BookOpen,
   Users,
-  BarChart3,
-  Settings,
-  LogOut
+  Tag
 } from 'lucide-vue-next';
 import { useAuthStore } from '../../stores/auth';
 
 const authStore = useAuthStore();
 const route = useRoute();
-const router = useRouter();
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard/analytics', icon: LayoutDashboard },
   { name: 'Buku', href: '/dashboard/books', icon: BookOpen },
   { name: 'Users', href: '/dashboard/users', icon: Users },
-  { name: 'Pengaturan', href: '/dashboard/settings', icon: Settings },
+  { name: 'Genre', href: '/dashboard/genres', icon: Tag },
 ];
-
-const handleLogout = async () => {
-  await authStore.logout();
-};
 </script>
 
 <template>
@@ -65,9 +58,12 @@ const handleLogout = async () => {
       </router-link>
     </nav>
 
-    <!-- User info & Logout -->
+    <!-- User info -->
     <div class="p-4 border-t border-gray-200">
-      <div class="flex items-center gap-3 px-3 py-2 mb-2">
+      <router-link
+        to="/profile"
+        class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors"
+      >
         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center">
           <span class="text-white font-semibold text-sm">
             {{ authStore.user?.username?.charAt(0).toUpperCase() }}
@@ -79,14 +75,7 @@ const handleLogout = async () => {
           </p>
           <p class="text-xs text-gray-500">{{ authStore.user?.role }}</p>
         </div>
-      </div>
-      <button
-        @click="handleLogout"
-        class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-xl transition-all"
-      >
-        <LogOut class="h-5 w-5" />
-        Keluar
-      </button>
+      </router-link>
     </div>
   </div>
 </template>

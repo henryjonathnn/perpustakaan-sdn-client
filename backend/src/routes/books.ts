@@ -8,6 +8,18 @@ import type { Book, BookRequest } from '../types';
 const books = new Hono();
 
 /**
+ * Helper function to create URL slug from title
+ */
+function createSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .trim();
+}
+
+/**
  * GET /books
  * Get all books (public access)
  */
@@ -29,7 +41,7 @@ books.get('/', async (c) => {
 /**
  * GET /books/search?q=query
  * Search books by title, author, or synopsis (public access)
- * IMPORTANT: Must be defined BEFORE /:id route
+ * IMPORTANT: Must be defined BEFORE /:slug route
  */
 books.get('/search', async (c) => {
   try {
@@ -62,18 +74,26 @@ books.get('/search', async (c) => {
 
 
 /**
- * GET /books/:id
- * Get single book by ID (public access)
+ * GET /books/:slug
+ * Get single book by SLUG (title with hyphens) - public access
+ * Example: /books/matematika-untuk-sd-mi-kelas-1
  */
-books.get('/:id', async (c) => {
+books.get('/:slug', async (c) => {
   try {
-    const id = c.req.param('id');
+    const slug = c.req.param('slug');
+    
+    // Convert slug back to searchable title pattern
+    // Replace hyphens with spaces for LIKE query
+    const titlePattern = slug.replace(/-/g, ' ');
+    
     const [rows] = await pool.query<Book[]>(
       `SELECT b.*, g.name as genre_name 
        FROM books b 
        INNER JOIN genres g ON b.genre_id = g.id 
-       WHERE b.id = ?`, 
-      [id]
+       WHERE LOWER(REPLACE(b.title, ' ', '-')) = LOWER(?)
+       OR b.title LIKE ?
+       LIMIT 1`, 
+      [slug, `%${titlePattern}%`]
     );
     
     if (rows.length === 0) {
@@ -121,7 +141,8 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
     
     return c.json({
       message: 'Book created successfully',
-      bookId: result.insertId
+      bookId: result.insertId,
+      slug: createSlug(title)
     }, 201);
     
   } catch (error) {
@@ -133,6 +154,7 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
 /**
  * PUT /books/:id
  * Update book (pustakawan only)
+ * Note: Still using ID for update to avoid ambiguity
  */
 books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
@@ -183,7 +205,10 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
       return c.json({ error: 'Book not found' }, 404);
     }
     
-    return c.json({ message: 'Book updated successfully' });
+    return c.json({ 
+      message: 'Book updated successfully',
+      slug: createSlug(title)
+    });
     
   } catch (error) {
     console.error('Update book error:', error);
@@ -194,6 +219,7 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
 /**
  * DELETE /books/:id
  * Delete book (pustakawan only)
+ * Note: Still using ID for delete to avoid ambiguity
  */
 books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
