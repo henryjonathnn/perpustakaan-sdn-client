@@ -3,7 +3,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash.debounce';
 import { Search, BookOpen, Sparkles, Loader2, Filter, X } from 'lucide-vue-next';
-import { booksAPI, genresAPI, type Book, type Genre } from '../services/api';
+import { booksAPI, genresAPI, createSlug, type Book, type Genre } from '../services/api';
 
 const router = useRouter();
 const allBooks = ref<Book[]>([]);
@@ -316,7 +316,7 @@ onMounted(() => {
 
         <!-- Books Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div v-for="book in displayedBooks" :key="book.id" @click="viewBookDetail(book.id)"
+          <div v-for="book in displayedBooks" :key="book.id" @click="viewBookDetail(book)"
             class="book-card cursor-pointer group">
             <!-- Book Cover -->
             <div class="book-cover">

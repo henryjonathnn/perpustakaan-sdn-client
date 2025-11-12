@@ -34,12 +34,14 @@ const getGenreBadgeClass = (genre: string): string => {
 const fetchBookDetail = async () => {
   try {
     loading.value = true;
-    const bookId = parseInt(route.params.id as string);
+    const slug = route.params.slug as string;
 
-    const bookResponse = await booksAPI.getById(bookId);
+    // Fetch book by slug
+    const bookResponse = await booksAPI.getBySlug(slug);
     book.value = bookResponse.data.book;
 
-    const recResponse = await recommendAPI.getByBookId(bookId);
+    // Get recommendations by book ID
+    const recResponse = await recommendAPI.getByBookId(book.value.id);
     recommendations.value = recResponse.data.recommendations;
   } catch (err: any) {
     error.value = err.response?.data?.error || 'Failed to fetch book details';
@@ -49,18 +51,18 @@ const fetchBookDetail = async () => {
   }
 };
 
-const viewBook = (id: number) => {
-  router.push(`/books/${id}`);
-  // Tidak perlu scroll manual, akan di-handle oleh watch
+const viewBook = (book: Book) => {
+  const slug = createSlug(book.title);
+  router.push(`/books/${slug}`);
 };
 
 const goBack = () => {
   router.push('/');
 };
 
-// FIX: Watch route params untuk reload data ketika ID berubah
-watch(() => route.params.id, (newId, oldId) => {
-  if (newId && newId !== oldId) {
+// FIX: Watch route params untuk reload data ketika slug berubah
+watch(() => route.params.slug, (newSlug, oldSlug) => {
+  if (newSlug && newSlug !== oldSlug) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     fetchBookDetail();
   }
@@ -197,7 +199,7 @@ onMounted(() => {
 
         <!-- Recommendations Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div v-for="recBook in recommendations" :key="recBook.id" @click="viewBook(recBook.id)"
+          <div v-for="recBook in recommendations" :key="recBook.id" @click="viewBook(recBook)"
             class="book-card cursor-pointer">
             <!-- Book Cover with Match Badge -->
             <div class="book-cover">

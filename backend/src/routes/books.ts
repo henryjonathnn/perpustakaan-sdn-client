@@ -82,25 +82,30 @@ books.get('/:slug', async (c) => {
   try {
     const slug = c.req.param('slug');
     
-    // Convert slug back to searchable title pattern
-    // Replace hyphens with spaces for LIKE query
-    const titlePattern = slug.replace(/-/g, ' ');
-    
-    const [rows] = await pool.query<Book[]>(
+    // First, try to get all books and find matching slug in JavaScript
+    // This is more reliable than SQL REPLACE function
+    const [allBooks] = await pool.query<Book[]>(
       `SELECT b.*, g.name as genre_name 
        FROM books b 
-       INNER JOIN genres g ON b.genre_id = g.id 
-       WHERE LOWER(REPLACE(b.title, ' ', '-')) = LOWER(?)
-       OR b.title LIKE ?
-       LIMIT 1`, 
-      [slug, `%${titlePattern}%`]
+       INNER JOIN genres g ON b.genre_id = g.id`
     );
     
-    if (rows.length === 0) {
+    // Find book by matching slug
+    const targetBook = allBooks.find(book => {
+      const bookSlug = book.title
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      return bookSlug === slug.toLowerCase();
+    });
+    
+    if (!targetBook) {
       return c.json({ error: 'Book not found' }, 404);
     }
     
-    return c.json({ book: rows[0] });
+    return c.json({ book: targetBook });
   } catch (error) {
     console.error('Get book error:', error);
     return c.json({ error: 'Failed to fetch book' }, 500);
