@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import debounce from 'lodash.debounce';
-import { 
-  PlusIcon, 
-  PencilIcon, 
-  TrashIcon, 
-  MagnifyingGlassIcon, 
+import {
+  PlusIcon,
+  PencilIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
   XMarkIcon,
   PhotoIcon,
   EyeIcon,
   FunnelIcon
-  
+
 } from '@heroicons/vue/24/outline';
 import { booksAPI, genresAPI, type Book, type Genre } from '../../services/api';
 import { showToast, showConfirm } from '../../utils/toast';
@@ -37,18 +37,18 @@ const form = ref({
 });
 
 // Computed for bulk actions
-const allSelected = computed(() => 
+const allSelected = computed(() =>
   filteredBooks.value.length > 0 && selectedBooks.value.length === filteredBooks.value.length
 );
 
 const filteredBooks = computed(() => {
   let result = books.value;
-  
+
   // Filter by genre
   if (selectedGenreFilter.value.length > 0) {
     result = result.filter(book => selectedGenreFilter.value.includes(book.genre_id));
   }
-  
+
   return result;
 });
 
@@ -259,52 +259,39 @@ onMounted(() => {
       <!-- Search -->
       <div class="relative flex-1">
         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-        <input
-          v-model="searchQuery"
-          @input="handleSearch"
-          type="text"
-          placeholder="Cari buku..."
-          class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
+        <input v-model="searchQuery" @input="handleSearch" type="text" placeholder="Cari buku..."
+          class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
       </div>
 
       <!-- Genre Filter -->
       <div class="relative">
-        <button
-          @click="showGenreFilter = !showGenreFilter"
-          class="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg border border-gray-300 hover:border-gray-400 transition-colors"
-        >
+        <button @click="showGenreFilter = !showGenreFilter"
+          class="flex items-center space-x-2 px-4 py-2 bg-white rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
           <FunnelIcon class="h-5 w-5 text-gray-600" />
           <span class="text-sm font-medium text-gray-700">
             Filter Genre
-            <span v-if="selectedGenreFilter.length > 0" class="ml-1 text-blue-600">({{ selectedGenreFilter.length }})</span>
+            <span v-if="selectedGenreFilter.length > 0" class="ml-1 text-blue-600">({{ selectedGenreFilter.length
+              }})</span>
           </span>
         </button>
 
-        <div v-if="showGenreFilter" class="absolute z-10 mt-2 w-64 bg-white rounded-lg border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto">
+        <div v-if="showGenreFilter"
+          class="absolute z-10 mt-2 w-64 bg-white rounded-lg border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto">
           <div class="flex items-center justify-between mb-3">
             <h3 class="font-semibold text-gray-900">Pilih Genre</h3>
-            <button 
-              v-if="selectedGenreFilter.length > 0"
-              @click="clearGenreFilter"
-              class="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
+            <button v-if="selectedGenreFilter.length > 0" @click="clearGenreFilter"
+              class="text-sm text-blue-600 hover:text-blue-700 font-medium">
               Reset
             </button>
           </div>
-          
+
           <div class="space-y-2">
-            <button
-              v-for="genre in genres"
-              :key="genre.id"
-              @click="toggleGenreFilter(genre.id)"
-              :class="[
-                'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all',
-                selectedGenreFilter.includes(genre.id)
-                  ? 'bg-blue-100 text-blue-900 border-2 border-blue-400'
-                  : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
-              ]"
-            >
+            <button v-for="genre in genres" :key="genre.id" @click="toggleGenreFilter(genre.id)" :class="[
+              'w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all',
+              selectedGenreFilter.includes(genre.id)
+                ? 'bg-blue-100 text-blue-900 border-2 border-blue-400'
+                : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+            ]">
               {{ genre.name }}
             </button>
           </div>
@@ -314,19 +301,15 @@ onMounted(() => {
       <!-- Bulk Actions -->
       <div v-if="selectedBooks.length > 0" class="flex items-center gap-2">
         <span class="text-sm text-gray-600">{{ selectedBooks.length }} dipilih</span>
-        <button
-          @click="bulkDelete"
-          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium"
-        >
+        <button @click="bulkDelete"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium">
           Hapus Terpilih
         </button>
       </div>
 
       <!-- Add Book Button -->
-      <button
-        @click="openCreateModal"
-        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
+      <button @click="openCreateModal"
+        class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
         <PlusIcon class="h-5 w-5 mr-2" />
         Tambah Buku
       </button>
@@ -343,12 +326,8 @@ onMounted(() => {
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3">
-                <input
-                  type="checkbox"
-                  :checked="allSelected"
-                  @change="toggleSelectAll"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
+                <input type="checkbox" :checked="allSelected" @change="toggleSelectAll"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Cover
@@ -370,30 +349,20 @@ onMounted(() => {
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="book in filteredBooks" :key="book.id" class="hover:bg-gray-50">
               <td class="px-6 py-4">
-                <input
-                  type="checkbox"
-                  :checked="selectedBooks.includes(book.id)"
-                  @change="toggleSelectBook(book.id)"
-                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
+                <input type="checkbox" :checked="selectedBooks.includes(book.id)" @change="toggleSelectBook(book.id)"
+                  class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <img
-                  v-if="book.cover_img"
-                  :src="getBookCoverUrl(book.cover_img) || ''"
-                  :alt="book.title"
+                <img v-if="book.cover_img" :src="getBookCoverUrl(book.cover_img) || ''" :alt="book.title"
                   class="h-16 w-12 object-cover rounded cursor-pointer hover:scale-105 transition-transform"
-                  @click="openDetailModal(book)"
-                />
+                  @click="openDetailModal(book)" />
                 <div v-else class="h-16 w-12 bg-gray-100 rounded flex items-center justify-center">
                   <PhotoIcon class="h-6 w-6 text-gray-400" />
                 </div>
               </td>
               <td class="px-6 py-4">
-                <button
-                  @click="openDetailModal(book)"
-                  class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors text-left"
-                >
+                <button @click="openDetailModal(book)"
+                  class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors text-left">
                   {{ book.title }}
                 </button>
               </td>
@@ -406,25 +375,13 @@ onMounted(() => {
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                <button
-                  @click="openDetailModal(book)"
-                  class="text-green-600 hover:text-green-900"
-                  title="Detail"
-                >
+                <button @click="openDetailModal(book)" class="text-green-600 hover:text-green-900" title="Detail">
                   <EyeIcon class="h-5 w-5" />
                 </button>
-                <button
-                  @click="openEditModal(book)"
-                  class="text-indigo-600 hover:text-indigo-900"
-                  title="Edit"
-                >
+                <button @click="openEditModal(book)" class="text-indigo-600 hover:text-indigo-900" title="Edit">
                   <PencilIcon class="h-5 w-5" />
                 </button>
-                <button
-                  @click="handleDelete(book)"
-                  class="text-red-600 hover:text-red-900"
-                  title="Hapus"
-                >
+                <button @click="handleDelete(book)" class="text-red-600 hover:text-red-900" title="Hapus">
                   <TrashIcon class="h-5 w-5" />
                 </button>
               </td>
@@ -435,119 +392,113 @@ onMounted(() => {
     </div>
 
     <!-- Create/Edit Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
-    >
-      <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="px-6 py-4 border-b border-gray-200">
+    <div v-if="showModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      @click.self="closeModal">
+      <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="sticky top-0 bg-gradient-to-r from-gray-900 to-gray-700 px-6 py-5 rounded-t-2xl">
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-medium text-gray-900">
-              {{ modalMode === 'create' ? 'Tambah Buku Baru' : 'Edit Buku' }}
+            <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+              <BookOpen class="h-6 w-6" />
+              <span>{{ modalMode === 'create' ? 'Tambah Buku Baru' : 'Edit Buku' }}</span>
             </h3>
-            <button @click="closeModal" class="text-gray-400 hover:text-gray-500">
+            <button @click="closeModal" class="text-white/80 hover:text-white transition-colors">
               <XMarkIcon class="h-6 w-6" />
             </button>
           </div>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="px-6 py-4">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+        <form @submit.prevent="handleSubmit" class="px-6 py-6 space-y-6">
+          <!-- Cover Preview -->
+          <div class="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+            <label class="block text-sm font-semibold text-gray-900 mb-3">
               Cover Buku
             </label>
-            <div class="flex items-center space-x-4">
-              <div
-                class="h-32 w-24 border-2 border-gray-300 border-dashed rounded-lg flex items-center justify-center"
-              >
-                <img
-                  v-if="imagePreview"
-                  :src="imagePreview"
-                  class="h-full w-full object-cover rounded-lg"
-                />
-                <div v-else class="text-center">
-                  <PhotoIcon class="h-8 w-8 text-gray-400 mx-auto" />
-                  <span class="text-xs text-gray-500">No image</span>
+            <div class="flex items-start space-x-4">
+              <div class="flex-shrink-0">
+                <div
+                  class="h-40 w-32 border-2 border-gray-200 rounded-xl overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 shadow-lg">
+                  <img v-if="imagePreview" :src="imagePreview" class="h-full w-full object-cover" alt="Preview" />
+                  <div v-else class="h-full flex flex-col items-center justify-center text-gray-400">
+                    <PhotoIcon class="h-10 w-10 mb-2" />
+                    <span class="text-xs">No Image</span>
+                  </div>
                 </div>
               </div>
-              <input
-                type="file"
-                accept="image/*"
-                @change="handleImageChange"
-                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
+              <div class="flex-1">
+                <input type="file" accept="image/*" @change="handleImageChange" class="block w-full text-sm text-gray-600
+                file:mr-4 file:py-3 file:px-4
+                file:rounded-lg file:border-0
+                file:text-sm file:font-semibold
+                file:bg-gray-900 file:text-white
+                hover:file:bg-gray-800
+                file:cursor-pointer cursor-pointer
+                transition-all" />
+                <p class="mt-2 text-xs text-gray-500">
+                  Format: JPG, PNG, WebP, GIF. Maksimal 5MB.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Judul
+          <!-- Title -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">
+              Judul Buku <span class="text-red-500">*</span>
             </label>
-            <input
-              v-model="form.title"
-              type="text"
-              required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+            <input v-model="form.title" type="text" required placeholder="Masukkan judul buku" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+                 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 
+                 outline-none transition-all text-gray-900 
+                 placeholder:text-gray-400" />
           </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Penulis
+          <!-- Author -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">
+              Penulis <span class="text-red-500">*</span>
             </label>
-            <input
-              v-model="form.author"
-              type="text"
-              required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+            <input v-model="form.author" type="text" required placeholder="Masukkan nama penulis" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+                 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 
+                 outline-none transition-all text-gray-900 
+                 placeholder:text-gray-400" />
           </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Genre
+          <!-- Genre -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">
+              Genre <span class="text-red-500">*</span>
             </label>
-            <select
-              v-model="form.genreId"
-              required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            >
-              <option value="">Pilih genre</option>
-              <option
-                v-for="genre in genres"
-                :key="genre.id"
-                :value="genre.id"
-              >
+            <select v-model="form.genreId" required class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+                 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 
+                 outline-none transition-all text-gray-900 bg-white">
+              <option value="" disabled>Pilih genre</option>
+              <option v-for="genre in genres" :key="genre.id" :value="genre.id">
                 {{ genre.name }}
               </option>
             </select>
           </div>
 
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Sinopsis
+          <!-- Synopsis -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-900 mb-2">
+              Sinopsis <span class="text-red-500">*</span>
             </label>
-            <textarea
-              v-model="form.synopsis"
-              rows="4"
-              required
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            ></textarea>
+            <textarea v-model="form.synopsis" rows="5" required placeholder="Masukkan sinopsis buku" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 
+                 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 
+                 outline-none transition-all text-gray-900 
+                 placeholder:text-gray-400 resize-none"></textarea>
           </div>
 
-          <div class="flex justify-end space-x-3">
-            <button
-              type="button"
-              @click="closeModal"
-              class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
+          <!-- Action Buttons -->
+          <div class="flex justify-end space-x-3 pt-4 border-t-2 border-gray-100">
+            <button type="button" @click="closeModal" class="px-6 py-3 border-2 border-gray-300 rounded-xl text-sm font-semibold 
+                 text-gray-700 hover:bg-gray-50 transition-all">
               Batal
             </button>
-            <button
-              type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              {{ modalMode === 'create' ? 'Tambah' : 'Perbarui' }}
+            <button type="submit" class="px-6 py-3 bg-gradient-to-r from-gray-900 to-gray-700 
+                 text-white rounded-xl text-sm font-semibold 
+                 hover:shadow-lg hover:shadow-gray-900/30 
+                 transition-all duration-300">
+              {{ modalMode === 'create' ? 'Tambah Buku' : 'Perbarui Buku' }}
             </button>
           </div>
         </form>
@@ -555,11 +506,9 @@ onMounted(() => {
     </div>
 
     <!-- Detail Modal -->
-    <div
-      v-if="showDetailModal && selectedBook"
+    <div v-if="showDetailModal && selectedBook"
       class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50"
-      @click.self="closeModal"
-    >
+      @click.self="closeModal">
       <div class="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
@@ -574,12 +523,8 @@ onMounted(() => {
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Cover Image -->
             <div>
-              <img
-                v-if="selectedBook.cover_img"
-                :src="getBookCoverUrl(selectedBook.cover_img) || ''"
-                :alt="selectedBook.title"
-                class="w-full rounded-lg shadow-lg"
-              />
+              <img v-if="selectedBook.cover_img" :src="getBookCoverUrl(selectedBook.cover_img) || ''"
+                :alt="selectedBook.title" class="w-full rounded-lg shadow-lg" />
               <div v-else class="w-full aspect-[2/3] bg-gray-100 rounded-lg flex items-center justify-center">
                 <PhotoIcon class="h-16 w-16 text-gray-400" />
               </div>
@@ -604,8 +549,11 @@ onMounted(() => {
               </div>
 
               <div class="text-sm text-gray-500 space-y-1">
-                <p>Ditambahkan: {{ new Date(selectedBook.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' }) }}</p>
-                <p>Terakhir diubah: {{ new Date(selectedBook.updated_at).toLocaleDateString('id-ID', { dateStyle: 'long' }) }}</p>
+                <p>Ditambahkan: {{ new Date(selectedBook.created_at).toLocaleDateString('id-ID', { dateStyle: 'long' })
+                  }}</p>
+                <p>Terakhir diubah: {{ new Date(selectedBook.updated_at).toLocaleDateString('id-ID', {
+                  dateStyle: 'long'
+                  }) }}</p>
               </div>
             </div>
           </div>

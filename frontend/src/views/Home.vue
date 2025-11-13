@@ -20,12 +20,12 @@ const fetchData = async () => {
   try {
     loading.value = true;
     error.value = '';
-    
+
     const [booksResponse, genresResponse] = await Promise.all([
       booksAPI.getAll(),
       genresAPI.getAll()
     ]);
-    
+
     allBooks.value = booksResponse.data.books;
     displayedBooks.value = booksResponse.data.books;
     genres.value = genresResponse.data.data;
@@ -42,7 +42,7 @@ const filterByGenres = () => {
   if (selectedGenres.value.length === 0) {
     displayedBooks.value = allBooks.value;
   } else {
-    displayedBooks.value = allBooks.value.filter(book => 
+    displayedBooks.value = allBooks.value.filter(book =>
       selectedGenres.value.includes(book.genre_id)
     );
   }
@@ -142,19 +142,16 @@ onMounted(() => {
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section with Banner -->
     <div class="relative bg-gradient-to-b from-white via-gray-50/50 to-gray-50 border-b border-gray-200/50">
-      <!-- Banner Background (Placeholder) -->
+      <!-- Banner Background (Full Opacity with Shadow) -->
       <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-gray-900/5 via-transparent to-gray-900/5"></div>
         <!-- Placeholder for school banner image -->
-        <img 
-          src="/banners/banner.png" 
-          alt="Perpustakaan Cemerlang" 
-          class="w-full h-full object-cover opacity-10"
-          @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
-        />
+        <img src="/banners/banner.jpeg" alt="Perpustakaan Cemerlang" class="w-full h-full object-cover"
+          @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
+        <!-- Dark gradient overlay at bottom -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
       </div>
 
-      <div class="relative max-w-[1400px] mx-auto px-6 lg:px-8 pt-16 pb-12">
+      <div class="relative max-w-[1400px] mx-auto px-8 lg:px-12 pt-16 pb-12">
         <!-- Title Section -->
         <div class="text-center mb-12 space-y-4">
           <div class="flex items-center justify-center space-x-3 mb-6">
@@ -183,18 +180,12 @@ onMounted(() => {
             <div
               class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
               <Search class="absolute left-6 h-5 w-5 text-gray-400" />
-              <input 
-                v-model="searchQuery" 
-                type="text" 
+              <input v-model="searchQuery" type="text"
                 placeholder="Cari buku berdasarkan judul, penulis, atau sinopsis..."
-                class="w-full pl-14 pr-14 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" 
-              />
+                class="w-full pl-14 pr-14 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" />
               <Loader2 v-if="searching" class="absolute right-14 h-5 w-5 text-gray-400 animate-spin" />
-              <button 
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="absolute right-6 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-              >
+              <button v-if="searchQuery" @click="clearSearch"
+                class="absolute right-6 p-1 rounded-lg hover:bg-gray-100 transition-colors">
                 <X class="h-5 w-5 text-gray-400" />
               </button>
             </div>
@@ -202,10 +193,8 @@ onMounted(() => {
 
           <!-- Genre Filter Button & Dropdown -->
           <div class="relative">
-            <button
-              @click="showGenreFilter = !showGenreFilter"
-              class="flex items-center space-x-2 px-5 py-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors shadow-sm"
-            >
+            <button @click="showGenreFilter = !showGenreFilter"
+              class="flex items-center space-x-2 px-5 py-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors shadow-sm">
               <Filter class="h-5 w-5 text-gray-600" />
               <span class="text-sm font-medium text-gray-700">
                 Filter Genre
@@ -214,30 +203,23 @@ onMounted(() => {
             </button>
 
             <!-- Genre Dropdown -->
-            <div v-if="showGenreFilter" class="absolute z-10 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto">
+            <div v-if="showGenreFilter"
+              class="absolute z-10 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto">
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Pilih Genre</h3>
-                <button 
-                  v-if="selectedGenres.length > 0"
-                  @click="clearGenreFilters"
-                  class="text-sm text-amber-600 hover:text-amber-700 font-medium"
-                >
+                <button v-if="selectedGenres.length > 0" @click="clearGenreFilters"
+                  class="text-sm text-amber-600 hover:text-amber-700 font-medium">
                   Reset
                 </button>
               </div>
-              
+
               <div class="grid grid-cols-2 gap-2">
-                <button
-                  v-for="genre in genres"
-                  :key="genre.id"
-                  @click="toggleGenre(genre.id)"
-                  :class="[
-                    'text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
-                    selectedGenres.includes(genre.id)
-                      ? 'bg-amber-100 text-amber-900 border-2 border-amber-400'
-                      : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
-                  ]"
-                >
+                <button v-for="genre in genres" :key="genre.id" @click="toggleGenre(genre.id)" :class="[
+                  'text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  selectedGenres.includes(genre.id)
+                    ? 'bg-amber-100 text-amber-900 border-2 border-amber-400'
+                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                ]">
                   {{ genre.name }}
                 </button>
               </div>
@@ -246,13 +228,9 @@ onMounted(() => {
 
           <!-- Active Genre Filters -->
           <div v-if="selectedGenres.length > 0" class="flex flex-wrap gap-2">
-            <button
-              v-for="genreId in selectedGenres"
-              :key="genreId"
-              @click="toggleGenre(genreId)"
-              class="inline-flex items-center space-x-2 px-3 py-1.5 bg-amber-100 text-amber-900 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors"
-            >
-              <span>{{ genres.find(g => g.id === genreId)?.name }}</span>
+            <button v-for="genreId in selectedGenres" :key="genreId" @click="toggleGenre(genreId)"
+              class="inline-flex items-center space-x-2 px-3 py-1.5 bg-amber-100 text-amber-900 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors">
+              <span>{{genres.find(g => g.id === genreId)?.name}}</span>
               <X class="h-3.5 w-3.5" />
             </button>
           </div>
@@ -338,8 +316,7 @@ onMounted(() => {
 
               <!-- Genre Badge -->
               <div class="flex flex-wrap gap-1.5">
-                <span 
-                  :class="['badge-genre text-[10px]', getGenreBadgeClass(book.genre_name)]">
+                <span :class="['badge-genre text-[10px]', getGenreBadgeClass(book.genre_name)]">
                   {{ book.genre_name }}
                 </span>
               </div>

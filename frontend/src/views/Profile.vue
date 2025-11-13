@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { User, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-vue-next';
+import { User, Lock, ArrowLeft, Eye, EyeOff, Shield, Calendar } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { usersAPI } from '../services/api';
 import { showToast, showConfirm } from '../utils/toast';
@@ -39,12 +39,10 @@ const handleUpdateProfile = () => {
 
         const updateData: any = {};
         
-        // Jika username berubah
         if (form.value.username !== authStore.user?.username) {
           updateData.username = form.value.username;
         }
 
-        // Jika mengubah password
         if (form.value.newPassword) {
           if (!form.value.currentPassword) {
             showToast.error('Password saat ini harus diisi');
@@ -75,7 +73,6 @@ const handleUpdateProfile = () => {
 
         await usersAPI.update(authStore.user!.id, updateData);
 
-        // Update local user data jika username berubah
         if (updateData.username) {
           const updatedUser = { ...authStore.user!, username: updateData.username };
           localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -84,7 +81,6 @@ const handleUpdateProfile = () => {
 
         showToast.success('Profil berhasil diperbarui!');
         
-        // Clear password fields
         form.value.currentPassword = '';
         form.value.newPassword = '';
         form.value.confirmPassword = '';
@@ -113,61 +109,74 @@ const goBack = () => {
       <!-- Back Button -->
       <button
         @click="goBack"
-        class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-gray-700 hover:bg-white hover:shadow-sm transition-all mb-6"
+        class="inline-flex items-center space-x-2 px-4 py-2.5 rounded-xl text-gray-700 hover:bg-white hover:shadow-sm transition-all mb-8 group"
       >
-        <ArrowLeft class="h-5 w-5" />
+        <ArrowLeft class="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
         <span class="font-medium">Kembali</span>
       </button>
 
       <!-- Profile Card -->
-      <div class="bg-white rounded-3xl border border-gray-200 shadow-xl shadow-gray-200/50 overflow-hidden">
-        <!-- Header -->
-        <div class="bg-gradient-to-br from-gray-900 to-gray-700 p-8 text-center">
-          <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/10 backdrop-blur-sm mb-4">
-            <User class="h-12 w-12 text-white" />
-          </div>
-          <h1 class="text-2xl font-bold text-white mb-1">Profil Saya</h1>
-          <p class="text-gray-300 text-sm">Kelola informasi akun Anda</p>
-        </div>
-
-        <!-- Form -->
-        <form @submit.prevent="handleUpdateProfile" class="p-8 space-y-6">
-          <!-- Role Badge -->
-          <div class="flex items-center justify-center">
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <!-- Header Section -->
+        <div class="relative bg-gradient-to-br from-gray-50 to-white p-8 border-b border-gray-200">
+          <!-- Avatar -->
+          <div class="flex flex-col items-center">
+            <div class="relative mb-4">
+              <div class="w-24 h-24 rounded-full bg-gradient-to-br from-gray-900 to-gray-700 flex items-center justify-center ring-4 ring-gray-100">
+                <User class="h-12 w-12 text-white" />
+              </div>
+              <!-- Online indicator -->
+              <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-4 border-white"></div>
+            </div>
+            
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ authStore.user?.username }}</h1>
+            
+            <!-- Role Badge -->
             <div
               :class="[
-                'px-4 py-2 rounded-full text-sm font-semibold',
+                'inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-semibold border-2',
                 authStore.user?.role === 'pustakawan'
-                  ? 'bg-purple-100 text-purple-800'
-                  : 'bg-blue-100 text-blue-800'
+                  ? 'bg-purple-50/50 text-purple-900 border-purple-200'
+                  : 'bg-blue-50/50 text-blue-900 border-blue-200'
               ]"
             >
-              {{ authStore.user?.role === 'pustakawan' ? '📚 Pustakawan' : '👨‍🎓 Siswa' }}
+              <Shield class="h-4 w-4" />
+              <span>{{ authStore.user?.role === 'pustakawan' ? 'Pustakawan' : 'Siswa' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Section -->
+        <form @submit.prevent="handleUpdateProfile" class="p-8 space-y-8">
+          <!-- Account Information -->
+          <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center space-x-2 pb-3 border-b border-gray-200">
+              <User class="h-5 w-5 text-gray-600" />
+              <span>Informasi Akun</span>
+            </h2>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <input
+                v-model="form.username"
+                type="text"
+                class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 bg-white"
+                :disabled="loading"
+              />
             </div>
           </div>
 
-          <!-- Username Section -->
-          <div>
-            <label class="block text-sm font-semibold text-gray-900 mb-2">
-              <User class="h-4 w-4 inline mr-2" />
-              Username
-            </label>
-            <input
-              v-model="form.username"
-              type="text"
-              class="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900"
-              :disabled="loading"
-            />
-          </div>
-
-          <div class="border-t border-gray-200 pt-6">
-            <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center">
-              <Lock class="h-4 w-4 mr-2" />
-              Ubah Password
-            </h3>
+          <!-- Security Section -->
+          <div class="space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center space-x-2 pb-3 border-b border-gray-200">
+              <Lock class="h-5 w-5 text-gray-600" />
+              <span>Keamanan</span>
+            </h2>
 
             <!-- Current Password -->
-            <div class="mb-4">
+            <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Password Saat Ini
               </label>
@@ -176,7 +185,7 @@ const goBack = () => {
                   v-model="form.currentPassword"
                   :type="showCurrentPassword ? 'text' : 'password'"
                   placeholder="Masukkan password saat ini"
-                  class="w-full px-4 py-3.5 pr-12 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  class="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                   :disabled="loading"
                 />
                 <button
@@ -191,7 +200,7 @@ const goBack = () => {
             </div>
 
             <!-- New Password -->
-            <div class="mb-4">
+            <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Password Baru
               </label>
@@ -200,7 +209,7 @@ const goBack = () => {
                   v-model="form.newPassword"
                   :type="showNewPassword ? 'text' : 'password'"
                   placeholder="Minimal 6 karakter"
-                  class="w-full px-4 py-3.5 pr-12 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  class="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                   :disabled="loading"
                 />
                 <button
@@ -224,7 +233,7 @@ const goBack = () => {
                   v-model="form.confirmPassword"
                   :type="showConfirmPassword ? 'text' : 'password'"
                   placeholder="Ketik ulang password baru"
-                  class="w-full px-4 py-3.5 pr-12 rounded-xl border border-gray-300 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400"
+                  class="w-full px-4 py-3 pr-12 rounded-xl border-2 border-gray-200 focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 outline-none transition-all text-gray-900 placeholder:text-gray-400 bg-white"
                   :disabled="loading"
                 />
                 <button
@@ -238,9 +247,11 @@ const goBack = () => {
               </div>
             </div>
 
-            <p class="text-sm text-gray-500 mt-2">
-              Kosongkan jika tidak ingin mengubah password
-            </p>
+            <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
+              <p class="text-sm text-amber-900">
+                💡 Kosongkan kolom password jika tidak ingin mengubah password
+              </p>
+            </div>
           </div>
 
           <!-- Submit Button -->

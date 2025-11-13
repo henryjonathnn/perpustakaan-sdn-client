@@ -56,7 +56,7 @@ services:
       - book_network
     depends_on:
       - api
-
+    command: sh -c "npm install -g lodash.debounce && npm install && npm run dev -- --host"
 volumes:
   mysql_data:
 

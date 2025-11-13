@@ -209,10 +209,10 @@ onMounted(() => {
               </div>
 
               <!-- Match Percentage -->
-              <div v-if="recBook.similarity"
+              <!-- <div v-if="recBook.similarity"
                 class="absolute top-3 right-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
                 {{ Math.round(recBook.similarity * 100) }}% Match
-              </div>
+              </div> -->
             </div>
 
             <!-- Book Info -->

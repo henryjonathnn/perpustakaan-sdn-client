@@ -2,22 +2,10 @@
 import { Hono } from 'hono';
 import pool from '../db/mysql';
 import { authMiddleware, pustakawanOnly } from '../middlewares/auth';
-import { validateImage, saveFile, deleteFile } from '../utils/upload';
+import { validateImage, saveFileWithTitle, replaceFile, deleteFile, createSlugFromTitle } from '../utils/upload';
 import type { Book, BookRequest } from '../types';
 
 const books = new Hono();
-
-/**
- * Helper function to create URL slug from title
- */
-function createSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-    .trim();
-}
 
 /**
  * GET /books
@@ -41,7 +29,6 @@ books.get('/', async (c) => {
 /**
  * GET /books/search?q=query
  * Search books by title, author, or synopsis (public access)
- * IMPORTANT: Must be defined BEFORE /:slug route
  */
 books.get('/search', async (c) => {
   try {
@@ -72,32 +59,22 @@ books.get('/search', async (c) => {
   }
 });
 
-
 /**
  * GET /books/:slug
  * Get single book by SLUG (title with hyphens) - public access
- * Example: /books/matematika-untuk-sd-mi-kelas-1
  */
 books.get('/:slug', async (c) => {
   try {
     const slug = c.req.param('slug');
     
-    // First, try to get all books and find matching slug in JavaScript
-    // This is more reliable than SQL REPLACE function
     const [allBooks] = await pool.query<Book[]>(
       `SELECT b.*, g.name as genre_name 
        FROM books b 
        INNER JOIN genres g ON b.genre_id = g.id`
     );
     
-    // Find book by matching slug
     const targetBook = allBooks.find(book => {
-      const bookSlug = book.title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
+      const bookSlug = createSlugFromTitle(book.title);
       return bookSlug === slug.toLowerCase();
     });
     
@@ -118,7 +95,6 @@ books.get('/:slug', async (c) => {
  */
 books.post('/', authMiddleware, pustakawanOnly, async (c) => {
   try {
-    // Handling multipart form data
     const formData = await c.req.formData();
     const title = formData.get('title') as string;
     const author = formData.get('author') as string;
@@ -131,12 +107,13 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
     }
     
     let coverImageName = null;
-    if (coverImage) {
+    if (coverImage && coverImage.size > 0) {
       const validation = validateImage(coverImage);
       if (!validation.valid) {
         return c.json({ error: validation.error }, 400);
       }
-      coverImageName = await saveFile(coverImage);
+      // Generate filename based on title
+      coverImageName = await saveFileWithTitle(coverImage, title);
     }
     
     const [result] = await pool.query<any>(
@@ -147,7 +124,7 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
     return c.json({
       message: 'Book created successfully',
       bookId: result.insertId,
-      slug: createSlug(title)
+      slug: createSlugFromTitle(title)
     }, 201);
     
   } catch (error) {
@@ -159,7 +136,6 @@ books.post('/', authMiddleware, pustakawanOnly, async (c) => {
 /**
  * PUT /books/:id
  * Update book (pustakawan only)
- * Note: Still using ID for update to avoid ambiguity
  */
 books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
@@ -175,7 +151,7 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
       return c.json({ error: 'All fields are required' }, 400);
     }
     
-    // Get current book data for cover image handling
+    // Get current book data
     const [currentBook] = await pool.query<Book[]>(
       'SELECT cover_img FROM books WHERE id = ?',
       [id]
@@ -187,18 +163,15 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
     
     let coverImageName = currentBook[0].cover_img;
     
-    if (coverImage) {
+    // Handle image update
+    if (coverImage && coverImage.size > 0) {
       const validation = validateImage(coverImage);
       if (!validation.valid) {
         return c.json({ error: validation.error }, 400);
       }
       
-      // Delete old cover image if exists
-      if (coverImageName) {
-        deleteFile(coverImageName);
-      }
-      
-      coverImageName = await saveFile(coverImage);
+      // Replace old image with new one
+      coverImageName = await replaceFile(coverImageName, coverImage, title);
     }
     
     const [result] = await pool.query<any>(
@@ -212,7 +185,7 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
     
     return c.json({ 
       message: 'Book updated successfully',
-      slug: createSlug(title)
+      slug: createSlugFromTitle(title)
     });
     
   } catch (error) {
@@ -224,7 +197,6 @@ books.put('/:id', authMiddleware, pustakawanOnly, async (c) => {
 /**
  * DELETE /books/:id
  * Delete book (pustakawan only)
- * Note: Still using ID for delete to avoid ambiguity
  */
 books.delete('/:id', authMiddleware, pustakawanOnly, async (c) => {
   try {
