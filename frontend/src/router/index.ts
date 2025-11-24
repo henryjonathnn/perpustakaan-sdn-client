@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/books/:slug', // Changed from :id to :slug
+    path: '/books/:slug',
     name: 'BookDetail',
     component: () => import('../views/BookDetail.vue'),
     meta: { requiresAuth: false },
@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  // 404 Page
+  // 404 & 403 - All unknown routes
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
@@ -84,7 +84,7 @@ const router = createRouter({
   },
 });
 
-// Navigation guards
+// Navigation guards with 403/404 redirect
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
@@ -99,19 +99,27 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  // Check if route requires authentication
+  // Check if route requires authentication (401 → redirect to login)
   if (to.meta.requiresAuth && !authStore.user) {
     next('/login');
     return;
   }
 
-  // Check if route requires pustakawan role
+  // Check if route requires pustakawan role (403 → redirect to 404)
   if (to.meta.requiresPustakawan && authStore.user?.role !== 'pustakawan') {
-    next('/');
+    // Redirect 403 to NotFound page
+    next({ name: 'NotFound', replace: true });
     return;
   }
 
   next();
+});
+
+// Global error handler for navigation errors
+router.onError((error) => {
+  console.error('Router error:', error);
+  // Redirect any router errors to 404
+  router.push({ name: 'NotFound' });
 });
 
 export default router;

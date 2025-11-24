@@ -1,4 +1,3 @@
-// frontend/src/services/api.ts
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -19,15 +18,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle auth errors
+// Handle auth errors and 403/404
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    
+    // 401 - Unauthorized: redirect to login
+    if (status === 401) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }
+    
+    // 403 - Forbidden: redirect to 404
+    if (status === 403) {
+      window.location.href = '/404';
+    }
+    
+    // 404 - Not Found: redirect to 404
+    if (status === 404) {
+      window.location.href = '/404';
+    }
+    
     return Promise.reject(error);
   }
 );
@@ -75,9 +88,9 @@ export interface Genre {
 export function createSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
     .trim();
 }
 

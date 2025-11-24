@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import debounce from 'lodash.debounce';
 import { Search, BookOpen, Sparkles, Loader2, Filter, X } from 'lucide-vue-next';
 import { booksAPI, genresAPI, createSlug, type Book, type Genre } from '../services/api';
+import Footer from '../components/Footer.vue';
 
 const router = useRouter();
 const allBooks = ref<Book[]>([]);
@@ -37,7 +38,6 @@ const fetchData = async () => {
   }
 };
 
-// Filter buku berdasarkan genre yang dipilih
 const filterByGenres = () => {
   if (selectedGenres.value.length === 0) {
     displayedBooks.value = allBooks.value;
@@ -48,7 +48,6 @@ const filterByGenres = () => {
   }
 };
 
-// Toggle genre selection
 const toggleGenre = (genreId: number) => {
   const index = selectedGenres.value.indexOf(genreId);
   if (index > -1) {
@@ -59,13 +58,11 @@ const toggleGenre = (genreId: number) => {
   filterByGenres();
 };
 
-// Clear all genre filters
 const clearGenreFilters = () => {
   selectedGenres.value = [];
   filterByGenres();
 };
 
-// Search dengan API
 const performSearch = async (query: string) => {
   try {
     searching.value = true;
@@ -79,18 +76,16 @@ const performSearch = async (query: string) => {
   }
 };
 
-// Debounced search
 const debouncedSearch = debounce((query: string) => {
   if (!query.trim()) {
     displayedBooks.value = allBooks.value;
-    filterByGenres(); // Apply genre filter jika ada
+    filterByGenres();
     searching.value = false;
     return;
   }
   performSearch(query);
 }, 500);
 
-// Watch search query
 watch(searchQuery, (newQuery) => {
   if (newQuery.trim()) {
     searching.value = true;
@@ -140,52 +135,59 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Hero Section with Banner -->
-    <div class="relative bg-gradient-to-b from-white via-gray-50/50 to-gray-50 border-b border-gray-200/50">
-      <!-- Banner Background (Full Opacity with Shadow) -->
-      <div class="absolute inset-0 overflow-hidden">
-        <!-- Placeholder for school banner image -->
-        <img src="/banners/banner.jpeg" alt="Perpustakaan Cemerlang" class="w-full h-full object-cover"
-          @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" />
-        <!-- Dark gradient overlay at bottom -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+    <!-- Hero Section dengan Banner yang Lebih Elegan -->
+    <div class="relative bg-gray-50">
+      <!-- Banner dengan Shadow Overlay -->
+      <div class="relative h-[400px] overflow-hidden">
+        <img 
+          src="/banners/banner.jpeg" 
+          alt="Perpustakaan Cemerlang" 
+          class="w-full h-full object-cover"
+          @error="(e) => (e.target as HTMLImageElement).style.display = 'none'" 
+        />
+        <!-- Elegant Dark Shadow Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/70"></div>
       </div>
 
-      <div class="relative max-w-[1400px] mx-auto px-8 lg:px-12 pt-16 pb-12">
-        <!-- Title Section -->
-        <div class="text-center mb-12 space-y-4">
-          <div class="flex items-center justify-center space-x-3 mb-6">
-            <div class="relative">
-              <div
-                class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse">
+      <!-- Content di Bawah Banner -->
+      <div class="relative max-w-[1400px] mx-auto px-8 lg:px-12 -mt-6 pb-12">
+        <!-- Title Section dengan Background Card -->
+        <!-- <div class="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl shadow-gray-900/10 p-5 mb-8 border border-gray-100">
+          <div class="text-center space-y-4">
+            <div class="flex items-center justify-center space-x-3 mb-4">
+              <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-amber-400 to-yellow-400 rounded-full blur-lg opacity-30 animate-pulse"></div>
+                <Sparkles class="h-8 w-8 text-amber-500 relative z-10" />
               </div>
-              <Sparkles class="h-8 w-8 text-amber-500 relative z-10" />
+              <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
+                Perpustakaan Cemerlang
+              </h1>
             </div>
-            <h1 class="text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight">
-              Perpustakaan Cemerlang
-            </h1>
+            <p class="text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              Jelajahi koleksi buku pilihan dan temukan bacaan favoritmu dengan rekomendasi yang dipersonalisasi
+            </p>
           </div>
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Jelajahi koleksi buku pilihan dan temukan bacaan favoritmu dengan rekomendasi yang dipersonalisasi
-          </p>
-        </div>
+        </div> -->
 
         <!-- Search Bar & Genre Filter -->
         <div class="max-w-3xl mx-auto space-y-4">
           <!-- Search Bar -->
           <div class="relative group">
-            <div
-              class="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl blur-xl opacity-0 group-hover:opacity-10 transition-opacity duration-500">
-            </div>
-            <div
-              class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
+            <div class="absolute inset-0 bg-gradient-to-r from-gray-900 to-gray-700 rounded-2xl blur-xl opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
+            <div class="relative flex items-center bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/50 focus-within:border-gray-400 focus-within:shadow-xl transition-all duration-300">
               <Search class="absolute left-6 h-5 w-5 text-gray-400" />
-              <input v-model="searchQuery" type="text"
+              <input 
+                v-model="searchQuery" 
+                type="text"
                 placeholder="Cari buku berdasarkan judul, penulis, atau sinopsis..."
-                class="w-full pl-14 pr-14 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400" />
+                class="w-full pl-14 pr-14 py-5 text-base bg-transparent rounded-2xl outline-none text-gray-900 placeholder:text-gray-400"
+              />
               <Loader2 v-if="searching" class="absolute right-14 h-5 w-5 text-gray-400 animate-spin" />
-              <button v-if="searchQuery" @click="clearSearch"
-                class="absolute right-6 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+              <button 
+                v-if="searchQuery" 
+                @click="clearSearch"
+                class="absolute right-6 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+              >
                 <X class="h-5 w-5 text-gray-400" />
               </button>
             </div>
@@ -193,8 +195,10 @@ onMounted(() => {
 
           <!-- Genre Filter Button & Dropdown -->
           <div class="relative">
-            <button @click="showGenreFilter = !showGenreFilter"
-              class="flex items-center space-x-2 px-5 py-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors shadow-sm">
+            <button 
+              @click="showGenreFilter = !showGenreFilter"
+              class="flex items-center space-x-2 px-5 py-3 bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-colors shadow-sm"
+            >
               <Filter class="h-5 w-5 text-gray-600" />
               <span class="text-sm font-medium text-gray-700">
                 Filter Genre
@@ -203,23 +207,33 @@ onMounted(() => {
             </button>
 
             <!-- Genre Dropdown -->
-            <div v-if="showGenreFilter"
-              class="absolute z-10 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto">
+            <div 
+              v-if="showGenreFilter"
+              class="absolute z-10 mt-2 w-full bg-white rounded-xl border border-gray-200 shadow-xl p-4 max-h-80 overflow-y-auto"
+            >
               <div class="flex items-center justify-between mb-4">
                 <h3 class="font-semibold text-gray-900">Pilih Genre</h3>
-                <button v-if="selectedGenres.length > 0" @click="clearGenreFilters"
-                  class="text-sm text-amber-600 hover:text-amber-700 font-medium">
+                <button 
+                  v-if="selectedGenres.length > 0" 
+                  @click="clearGenreFilters"
+                  class="text-sm text-amber-600 hover:text-amber-700 font-medium"
+                >
                   Reset
                 </button>
               </div>
 
               <div class="grid grid-cols-2 gap-2">
-                <button v-for="genre in genres" :key="genre.id" @click="toggleGenre(genre.id)" :class="[
-                  'text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
-                  selectedGenres.includes(genre.id)
-                    ? 'bg-amber-100 text-amber-900 border-2 border-amber-400'
-                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
-                ]">
+                <button 
+                  v-for="genre in genres" 
+                  :key="genre.id"
+                  @click="toggleGenre(genre.id)"
+                  :class="[
+                    'text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
+                    selectedGenres.includes(genre.id)
+                      ? 'bg-amber-100 text-amber-900 border-2 border-amber-400'
+                      : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                  ]"
+                >
                   {{ genre.name }}
                 </button>
               </div>
@@ -228,9 +242,13 @@ onMounted(() => {
 
           <!-- Active Genre Filters -->
           <div v-if="selectedGenres.length > 0" class="flex flex-wrap gap-2">
-            <button v-for="genreId in selectedGenres" :key="genreId" @click="toggleGenre(genreId)"
-              class="inline-flex items-center space-x-2 px-3 py-1.5 bg-amber-100 text-amber-900 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors">
-              <span>{{genres.find(g => g.id === genreId)?.name}}</span>
+            <button 
+              v-for="genreId in selectedGenres" 
+              :key="genreId"
+              @click="toggleGenre(genreId)"
+              class="inline-flex items-center space-x-2 px-3 py-1.5 bg-amber-100 text-amber-900 rounded-lg text-sm font-medium hover:bg-amber-200 transition-colors"
+            >
+              <span>{{ genres.find(g => g.id === genreId)?.name }}</span>
               <X class="h-3.5 w-3.5" />
             </button>
           </div>
@@ -256,8 +274,10 @@ onMounted(() => {
         </div>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">Terjadi Kesalahan</h3>
         <p class="text-gray-600 mb-6">{{ error }}</p>
-        <button @click="fetchData"
-          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-lg">
+        <button 
+          @click="fetchData"
+          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium shadow-lg"
+        >
           Coba Lagi
         </button>
       </div>
@@ -271,8 +291,11 @@ onMounted(() => {
         <p class="text-gray-600 mb-6">
           {{ searchQuery ? 'Coba gunakan kata kunci pencarian yang berbeda' : 'Belum ada buku tersedia' }}
         </p>
-        <button v-if="searchQuery || selectedGenres.length > 0" @click="() => { clearSearch(); clearGenreFilters(); }"
-          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium">
+        <button 
+          v-if="searchQuery || selectedGenres.length > 0" 
+          @click="() => { clearSearch(); clearGenreFilters(); }"
+          class="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors font-medium"
+        >
           Reset Pencarian
         </button>
       </div>
@@ -294,21 +317,22 @@ onMounted(() => {
 
         <!-- Books Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5">
-          <div v-for="book in displayedBooks" :key="book.id" @click="viewBookDetail(book)"
-            class="book-card cursor-pointer group">
+          <div 
+            v-for="book in displayedBooks" 
+            :key="book.id"
+            @click="viewBookDetail(book)"
+            class="book-card cursor-pointer group"
+          >
             <!-- Book Cover -->
             <div class="book-cover">
               <img :src="getBookCover(book)" :alt="book.title" loading="lazy" />
-              <div
-                class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              </div>
+              <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
 
             <!-- Book Info -->
             <div class="p-4 space-y-3">
               <div>
-                <h3
-                  class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
+                <h3 class="font-semibold text-gray-900 text-sm leading-snug line-clamp-2 group-hover:text-gray-700 transition-colors mb-1">
                   {{ book.title }}
                 </h3>
                 <p class="text-xs text-gray-500 line-clamp-1">{{ book.author }}</p>
@@ -325,50 +349,7 @@ onMounted(() => {
         </div>
       </div>
     </div>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-20">
-      <div class="max-w-[1400px] mx-auto px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <!-- About -->
-          <div>
-            <div class="flex items-center space-x-3 mb-4">
-              <div class="p-2 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl">
-                <BookOpen class="h-5 w-5 text-white" />
-              </div>
-              <span class="font-bold text-xl text-gray-900">Perpustakaan Cemerlang</span>
-            </div>
-            <p class="text-gray-600 text-sm leading-relaxed">
-              Platform perpustakaan digital untuk siswa SD dengan sistem rekomendasi buku yang cerdas dan personal.
-            </p>
-          </div>
-
-          <!-- Quick Links -->
-          <div>
-            <h3 class="font-semibold text-gray-900 mb-4">Link Cepat</h3>
-            <ul class="space-y-2 text-sm">
-              <li><a href="/" class="text-gray-600 hover:text-gray-900 transition-colors">Katalog Buku</a></li>
-              <li><a href="/login" class="text-gray-600 hover:text-gray-900 transition-colors">Login</a></li>
-              <li><a href="/register" class="text-gray-600 hover:text-gray-900 transition-colors">Daftar</a></li>
-            </ul>
-          </div>
-
-          <!-- Contact Info -->
-          <div>
-            <h3 class="font-semibold text-gray-900 mb-4">Kontak</h3>
-            <ul class="space-y-2 text-sm text-gray-600">
-              <li>Email: perpustakaan@cemerlang.sch.id</li>
-              <li>Telp: (021) 1234-5678</li>
-              <li>Alamat: Jl. Pendidikan No. 123, Jakarta</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-600">
-          <p>&copy; {{ new Date().getFullYear() }} Perpustakaan Cemerlang. All rights reserved.</p>
-        </div>
-      </div>
-    </footer>
+    <Footer />
   </div>
 </template>
 

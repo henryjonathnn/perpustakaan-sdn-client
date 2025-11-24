@@ -1,7 +1,8 @@
+<!-- Navigation.vue -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { BookOpen, User, LogOut, LayoutDashboard, Menu, X } from 'lucide-vue-next';
+import { LogOut, LayoutDashboard, Menu, X, User } from 'lucide-vue-next';
 import { authAPI } from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { showToast } from '../utils/toast';
@@ -37,13 +38,23 @@ const navigateTo = (path: string) => {
   <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/80">
     <div class="max-w-[1400px] mx-auto px-6 lg:px-8">
       <div class="flex justify-between h-20">
-        <!-- Logo -->
+        <!-- Logo dengan Tut Wuri Handayani -->
         <div class="flex items-center">
           <button @click="navigateTo('/')" class="flex items-center space-x-3 group">
-            <div class="p-2 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl group-hover:shadow-lg transition-all">
-              <BookOpen class="h-5 w-5 text-white" />
+            <!-- Logo Tut Wuri Handayani -->
+            <div class="relative">
+              <div class="absolute inset-0 bg-blue-900/10 rounded-xl blur group-hover:bg-blue-900/20 transition-all"></div>
+              <img 
+                src="/tut-wuri-handayani.png" 
+                alt="Logo Tut Wuri Handayani"
+                class="relative h-12 w-12 object-contain"
+                @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231e3a8a%22/%3E%3C/svg%3E'"
+              />
             </div>
-            <span class="font-bold text-xl text-gray-900">Perpustakaan Cemerlang</span>
+            <div class="flex flex-col">
+              <span class="font-bold text-lg text-gray-900 leading-tight">Perpustakaan Cemerlang</span>
+              <span class="text-xs text-gray-600 leading-tight">SD Negeri 2 Ganungkidul Nganjuk</span>
+            </div>
           </button>
         </div>
 

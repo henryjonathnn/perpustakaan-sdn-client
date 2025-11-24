@@ -1,30 +1,112 @@
-// src/services/tfidf.ts
+// backend/src/services/tfidf.ts
 
 /**
- * Tokenize and normalize text
+ * IMPLEMENTASI TF-IDF SESUAI PROPOSAL
+ * =====================================
+ * 1. Preprocessing: lowercasing, punctuation removal, tokenization, stop words removal, lemmatization
+ * 2. TF = T/L (frekuensi term / jumlah kata unik dalam dokumen)
+ * 3. IDF = log(N/n(i))
+ * 4. TF-IDF = TF × IDF
+ */
+
+// Stop words Bahasa Indonesia (sesuai proposal)
+const STOP_WORDS = new Set([
+  'di', 'ke', 'dari', 'dan', 'atau', 'adalah', 'ini', 'itu', 'yang', 'untuk',
+  'pada', 'dengan', 'oleh', 'akan', 'telah', 'sudah', 'dapat', 'juga', 'sebagai',
+  'dalam', 'serta', 'karena', 'jika', 'maka', 'seperti', 'antara', 'mereka',
+  'kita', 'kami', 'saya', 'anda', 'dia', 'ia', 'nya', 'ada', 'tidak', 'bukan',
+  'belum', 'hanya', 'masih', 'pernah', 'sangat', 'lebih', 'paling', 'setiap',
+  'semua', 'beberapa', 'banyak', 'sedikit', 'lain', 'lainnya', 'sendiri'
+]);
+
+// Simple lemmatization rules for Bahasa Indonesia
+const LEMMA_RULES = [
+  { pattern: /^men(.+)$/i, replace: '$1' },    // men- prefix
+  { pattern: /^mem(.+)$/i, replace: '$1' },    // mem- prefix
+  { pattern: /^meng(.+)$/i, replace: '$1' },   // meng- prefix
+  { pattern: /^me(.+)$/i, replace: '$1' },     // me- prefix
+  { pattern: /^ber(.+)$/i, replace: '$1' },    // ber- prefix
+  { pattern: /^ter(.+)$/i, replace: '$1' },    // ter- prefix
+  { pattern: /^pe(.+)$/i, replace: '$1' },     // pe- prefix
+  { pattern: /^di(.+)$/i, replace: '$1' },     // di- prefix
+  { pattern: /^ke(.+)an$/i, replace: '$1' },   // ke-an affix
+  { pattern: /(.+)an$/i, replace: '$1' },      // -an suffix
+  { pattern: /(.+)kan$/i, replace: '$1' },     // -kan suffix
+  { pattern: /(.+)i$/i, replace: '$1' },       // -i suffix
+];
+
+/**
+ * 1. LOWERCASING & PUNCTUATION REMOVAL
+ */
+function preprocessText(text: string): string {
+  return text
+    .toLowerCase()                           // Lowercasing
+    .replace(/[^\w\s]/g, ' ')               // Remove punctuation
+    .replace(/\s+/g, ' ')                   // Normalize whitespace
+    .trim();
+}
+
+/**
+ * 2. TOKENIZATION
  */
 function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
+  return preprocessText(text)
     .split(/\s+/)
-    .filter(token => token.length > 2);
+    .filter(token => token.length > 0);
+}
+
+/**
+ * 3. STOP WORDS REMOVAL
+ */
+function removeStopWords(tokens: string[]): string[] {
+  return tokens.filter(token => 
+    !STOP_WORDS.has(token) && token.length > 2
+  );
+}
+
+/**
+ * 4. LEMMATIZATION (Simple rule-based for Indonesian)
+ */
+function lemmatize(word: string): string {
+  for (const rule of LEMMA_RULES) {
+    if (rule.pattern.test(word)) {
+      return word.replace(rule.pattern, rule.replace);
+    }
+  }
+  return word;
+}
+
+/**
+ * FULL TEXT PREPROCESSING PIPELINE
+ */
+function preprocessPipeline(text: string): string[] {
+  const tokens = tokenize(text);
+  const withoutStopWords = removeStopWords(tokens);
+  const lemmatized = withoutStopWords.map(lemmatize);
+  return lemmatized;
 }
 
 /**
  * Calculate Term Frequency
+ * TF = T/L
+ * T = frekuensi kemunculan term
+ * L = jumlah kata unik dalam dokumen
  */
 function calculateTF(tokens: string[]): Map<string, number> {
   const tf = new Map<string, number>();
-  const totalTokens = tokens.length;
+  const uniqueTokens = new Set(tokens);
+  const L = uniqueTokens.size; // Jumlah kata unik
   
+  if (L === 0) return tf;
+  
+  // Hitung frekuensi setiap term (T)
   for (const token of tokens) {
     tf.set(token, (tf.get(token) || 0) + 1);
   }
   
-  // Normalize by total tokens
+  // Normalize: TF = T/L
   for (const [token, count] of tf.entries()) {
-    tf.set(token, count / totalTokens);
+    tf.set(token, count / L);
   }
   
   return tf;
@@ -32,12 +114,15 @@ function calculateTF(tokens: string[]): Map<string, number> {
 
 /**
  * Calculate Inverse Document Frequency
+ * IDF = log(N/n(i))
+ * N = total dokumen
+ * n(i) = jumlah dokumen yang mengandung term i
  */
 function calculateIDF(documents: string[][]): Map<string, number> {
   const idf = new Map<string, number>();
-  const totalDocs = documents.length;
+  const N = documents.length; // Total dokumen
   
-  // Count document frequency for each term
+  // Hitung document frequency untuk setiap term
   const df = new Map<string, number>();
   for (const doc of documents) {
     const uniqueTokens = new Set(doc);
@@ -46,9 +131,9 @@ function calculateIDF(documents: string[][]): Map<string, number> {
     }
   }
   
-  // Calculate IDF
+  // Hitung IDF = log(N/n(i))
   for (const [token, docFreq] of df.entries()) {
-    idf.set(token, Math.log(totalDocs / docFreq));
+    idf.set(token, Math.log(N / docFreq));
   }
   
   return idf;
@@ -56,15 +141,16 @@ function calculateIDF(documents: string[][]): Map<string, number> {
 
 /**
  * Calculate TF-IDF vectors for all documents
+ * TF-IDF = TF × IDF
  */
 export function calculateTFIDF(documents: string[]): Map<number, Map<string, number>> {
-  // Tokenize all documents
-  const tokenizedDocs = documents.map(doc => tokenize(doc));
+  // Tokenize dan preprocess semua dokumen
+  const tokenizedDocs = documents.map(doc => preprocessPipeline(doc));
   
-  // Calculate IDF for all terms
+  // Calculate IDF untuk semua terms
   const idf = calculateIDF(tokenizedDocs);
   
-  // Calculate TF-IDF for each document
+  // Calculate TF-IDF untuk setiap dokumen
   const tfidfVectors = new Map<number, Map<string, number>>();
   
   for (let i = 0; i < tokenizedDocs.length; i++) {
@@ -72,6 +158,7 @@ export function calculateTFIDF(documents: string[]): Map<number, Map<string, num
     const tf = calculateTF(tokens);
     const tfidf = new Map<string, number>();
     
+    // TF-IDF = TF × IDF
     for (const [token, tfValue] of tf.entries()) {
       const idfValue = idf.get(token) || 0;
       tfidf.set(token, tfValue * idfValue);
