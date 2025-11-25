@@ -19,8 +19,12 @@ recommend.get('/', async (c) => {
       return c.json({ error: 'Title parameter is required' }, 400);
     }
     
-    // Fetch all books from database
-    const [books] = await pool.query<Book[]>('SELECT * FROM books');
+    // Fetch all books from database WITH GENRE NAME
+    const [books] = await pool.query<Book[]>(
+      `SELECT b.*, g.name as genre_name 
+       FROM books b 
+       INNER JOIN genres g ON b.genre_id = g.id`
+    );
     
     if (books.length === 0) {
       return c.json({ error: 'No books available' }, 404);
@@ -60,8 +64,12 @@ recommend.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
     
-    // Fetch all books from database
-    const [books] = await pool.query<Book[]>('SELECT * FROM books');
+    // Fetch all books from database WITH GENRE NAME
+    const [books] = await pool.query<Book[]>(
+      `SELECT b.*, g.name as genre_name 
+       FROM books b 
+       INNER JOIN genres g ON b.genre_id = g.id`
+    );
     
     if (books.length === 0) {
       return c.json({ error: 'No books available' }, 404);

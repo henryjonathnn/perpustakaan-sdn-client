@@ -1,13 +1,3 @@
-// backend/src/services/tfidf.ts
-
-/**
- * IMPLEMENTASI TF-IDF SESUAI PROPOSAL
- * =====================================
- * 1. Preprocessing: lowercasing, punctuation removal, tokenization, stop words removal, lemmatization
- * 2. TF = T/L (frekuensi term / jumlah kata unik dalam dokumen)
- * 3. IDF = log(N/n(i))
- * 4. TF-IDF = TF × IDF
- */
 
 // Stop words Bahasa Indonesia (sesuai proposal)
 const STOP_WORDS = new Set([
